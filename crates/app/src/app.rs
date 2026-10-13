@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::time::{Duration, Instant};
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use gpui::{
     Animation, AnimationExt as _, AnyElement, App, Bounds, ClickEvent, Context, CursorStyle,
@@ -17,6 +17,7 @@ use gpui::{
 };
 use gyotaku_core::trash::{self, Trashed};
 use gyotaku_core::{Config, Hit, Index, Line, Query, Rect, Shot, ThemeChoice};
+use gyotaku_ocr::{MODEL_ID, Vision};
 
 use crate::grid::{self, Row};
 use crate::images::{self, Images, Lookup};
@@ -113,6 +114,7 @@ const FULL_MAX_SIDE: u32 = 3840;
 
 pub struct Gyotaku {
     index: Index,
+    visual_model: Arc<Mutex<Option<Vision>>>,
     input: Entity<TextInput>,
     query: String,
     /// `query` split into words and filters (`in:`, `date:` and so on).
@@ -122,6 +124,7 @@ pub struct Gyotaku {
     /// The tiles, in order. A burst of near-identical shots shows as its
     /// first one alone, unless it's unfolded (see `gyotaku_core::burst`).
     hits: Vec<Hit>,
+    lexical_hits: Vec<Hit>,
     /// Every burst with more than one result: the results after its first,
     /// whether they're on screen or folded away behind it.
     stacks: HashMap<i64, Vec<Hit>>,
@@ -138,6 +141,7 @@ pub struct Gyotaku {
     thumbs: Images,
     full: Images,
     searchable: usize,
+    visual_searchable: usize,
 
     rows: Vec<Row>,
     located: Vec<(usize, usize)>,
@@ -146,6 +150,8 @@ pub struct Gyotaku {
     selected: usize,
     /// Bumped on every search so the ink press replays on the new results.
     generation: usize,
+    /// Invalidates delayed semantic searches as the query or index changes.
+    visual_generation: usize,
     /// Where each visible tile was painted last frame, for the open animation.
     tile_bounds: Rc<RefCell<HashMap<usize, Bounds<Pixels>>>>,
 
@@ -264,6 +270,7 @@ struct Detail {
 impl Gyotaku {
     pub fn new(index: Index, floating: bool, window: &mut Window, cx: &mut Context<Self>) -> Self {
         let searchable = index.visible_len().unwrap_or(0);
+        let visual_searchable = index.visual_len(MODEL_ID).unwrap_or(0);
         let input = cx.new(|cx| TextInput::new(placeholder(searchable), cx));
         // Only when the text really changed: backspace in an empty field (a
         // natural reflex with shots marked) would otherwise clear the marks,
@@ -313,12 +320,16 @@ impl Gyotaku {
             thumbs: Images::new(THUMB_CACHE, THUMB_MAX_SIDE),
             full: Images::new(FULL_CACHE, FULL_MAX_SIDE),
             searchable,
+            visual_searchable,
             rows: Vec::new(),
             located: Vec::new(),
             laid_out_for: 0.0,
             list: ListState::new(0, ListAlignment::Top, px(ROW_HEIGHT * 3.0)),
             selected: 0,
+            visual_model: Arc::new(Mutex::new(None)),
+            lexical_hits: Vec::new(),
             generation: 0,
+            visual_generation: 0,
             tile_bounds: Rc::default(),
             detail: None,
             toast: None,
@@ -432,12 +443,19 @@ impl Gyotaku {
             cx.notify();
         }
         let searchable = self.index.visible_len().unwrap_or(self.searchable);
-        if searchable != self.searchable {
-            self.searchable = searchable;
-            self.input.update(cx, |input, cx| {
-                input.placeholder = placeholder(searchable);
-                cx.notify();
-            });
+        let visual_searchable = self
+            .index
+            .visual_len(MODEL_ID)
+            .unwrap_or(self.visual_searchable);
+        if searchable != self.searchable || visual_searchable != self.visual_searchable {
+            if searchable != self.searchable {
+                self.searchable = searchable;
+                self.input.update(cx, |input, cx| {
+                    input.placeholder = placeholder(searchable);
+                    cx.notify();
+                });
+            }
+            self.visual_searchable = visual_searchable;
             self.refresh(cx);
             cx.notify();
         }
@@ -450,12 +468,19 @@ impl Gyotaku {
     pub fn reopen(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.attach(window, cx);
         let searchable = self.index.visible_len().unwrap_or(self.searchable);
-        if searchable != self.searchable {
-            self.searchable = searchable;
-            self.input.update(cx, |input, cx| {
-                input.placeholder = placeholder(searchable);
-                cx.notify();
-            });
+        let visual_searchable = self
+            .index
+            .visual_len(MODEL_ID)
+            .unwrap_or(self.visual_searchable);
+        if searchable != self.searchable || visual_searchable != self.visual_searchable {
+            if searchable != self.searchable {
+                self.searchable = searchable;
+                self.input.update(cx, |input, cx| {
+                    input.placeholder = placeholder(searchable);
+                    cx.notify();
+                });
+            }
+            self.visual_searchable = visual_searchable;
             self.refresh(cx);
         }
         cx.notify();
@@ -522,8 +547,6 @@ impl Gyotaku {
     fn load_hits(&mut self, cx: &mut Context<Self>) {
         let query = self.input.read(cx).content.to_string();
         let parsed = Query::parse(&query);
-        // Only filters, like `date:today`, list everything they let through,
-        // the way browsing does.
         let limit = if parsed.terms.is_empty() {
             BROWSE_LIMIT
         } else {
@@ -531,8 +554,9 @@ impl Gyotaku {
         };
         let found = self.index.find(&query, limit).unwrap_or_default();
         self.found = found.len();
+        self.lexical_hits = found.clone();
         self.stack(found);
-        self.parsed = parsed;
+        self.parsed = parsed.clone();
         self.limit = limit;
         self.matched.clear();
         self.thumb_paths = self
@@ -540,7 +564,83 @@ impl Gyotaku {
             .iter()
             .map(|h| gyotaku_core::thumb_path(&h.path).unwrap_or_default())
             .collect();
-        self.query = query;
+        self.query = query.clone();
+        self.visual_generation = self.visual_generation.wrapping_add(1);
+        if !parsed.terms.is_empty() {
+            self.search_visual(query, parsed, limit, self.visual_generation, cx);
+        }
+    }
+
+    fn search_visual(
+        &self,
+        query: String,
+        parsed: Query,
+        limit: usize,
+        generation: usize,
+        cx: &mut Context<Self>,
+    ) {
+        let model = self.visual_model.clone();
+        let text = parsed.terms.join(" ");
+        let filters = parsed;
+        cx.spawn(async move |this, cx| {
+            cx.background_executor()
+                .timer(Duration::from_millis(140))
+                .await;
+            let current = this
+                .update(cx, |this, _| {
+                    this.query == query && this.visual_generation == generation
+                })
+                .unwrap_or(false);
+            if !current {
+                return;
+            }
+            let result = cx
+                .background_executor()
+                .spawn(async move {
+                    let mut model = model
+                        .lock()
+                        .map_err(|_| anyhow::anyhow!("visual model lock poisoned"))?;
+                    if model.is_none() {
+                        *model = Some(Vision::new(Config::load_or_default().threads)?);
+                    }
+                    let vector = model
+                        .as_mut()
+                        .expect("visual model was just initialized")
+                        .text_embedding(&text)?;
+                    Index::open_default()?.find_visual(&vector, &filters, MODEL_ID, limit)
+                })
+                .await;
+            match result {
+                Ok(visual) => {
+                    let _ = this.update(cx, |this, cx| {
+                        if this.query == query && this.visual_generation == generation {
+                            this.apply_visual_hits(visual, cx);
+                        }
+                    });
+                }
+                Err(e) => eprintln!("visual search unavailable: {e:#}"),
+            }
+        })
+        .detach();
+    }
+
+    fn apply_visual_hits(&mut self, visual: Vec<(Hit, f32)>, cx: &mut Context<Self>) {
+        let selected = self.hits.get(self.selected).map(|hit| hit.id);
+        let hits = merge_hits(&self.lexical_hits, visual, self.limit);
+        self.found = hits.len();
+        self.stack(hits);
+        self.selected = selected
+            .and_then(|id| self.hits.iter().position(|hit| hit.id == id))
+            .unwrap_or(0);
+        self.matched.clear();
+        self.thumb_paths = self
+            .hits
+            .iter()
+            .map(|h| gyotaku_core::thumb_path(&h.path).unwrap_or_default())
+            .collect();
+        self.laid_out_for = 0.0;
+        self.reveal_selected = true;
+        cx.notify();
     }
 
     /// Lays results out as tiles: one per burst, led by its first result,
@@ -2659,6 +2759,33 @@ fn lerp_bounds(a: Bounds<Pixels>, b: Bounds<Pixels>, t: f32) -> Bounds<Pixels> {
     )
 }
 
+fn merge_hits(lexical: &[Hit], visual: Vec<(Hit, f32)>, limit: usize) -> Vec<Hit> {
+    let mut ranked: HashMap<i64, (Hit, f32)> = HashMap::with_capacity(lexical.len() + visual.len());
+    for (rank, hit) in lexical.iter().cloned().enumerate() {
+        let weight = if hit.near { 0.5 } else { 2.0 };
+        let score = weight / (60 + rank + 1) as f32;
+        ranked
+            .entry(hit.id)
+            .and_modify(|(_, current)| *current += score)
+            .or_insert((hit, score));
+    }
+    for (rank, (hit, _similarity)) in visual.into_iter().enumerate() {
+        let score = 1.0 / (60 + rank + 1) as f32;
+        ranked
+            .entry(hit.id)
+            .and_modify(|(_, current)| *current += score)
+            .or_insert((hit, score));
+    }
+    let mut hits: Vec<_> = ranked.into_values().collect();
+    hits.sort_by(|a, b| {
+        b.1.total_cmp(&a.1)
+            .then_with(|| b.0.mtime.cmp(&a.0.mtime))
+            .then_with(|| a.0.id.cmp(&b.0.id))
+    });
+    hits.truncate(limit);
+    hits.into_iter().map(|(hit, _)| hit).collect()
+}
+
 fn placeholder(searchable: usize) -> SharedString {
     match searchable {
         0 => "nothing to search yet".into(),
@@ -2724,6 +2851,26 @@ fn taken_at(mtime: i64) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn visual_results_add_semantic_matches_without_duplicating_ocr_hits() {
+        let hit = |id, path: &str, near| Hit {
+            id,
+            path: PathBuf::from(path),
+            mtime: id,
+            width: 100,
+            height: 100,
+            lines: Vec::new(),
+            near,
+            look: None,
+            burst: id,
+        };
+        let exact = hit(1, "/shots/order.png", false);
+        let semantic = hit(2, "/shots/receipt.png", false);
+        let merged = merge_hits(&[exact.clone()], vec![(semantic, 0.9), (exact, 0.8)], 10);
+
+        assert_eq!(merged.iter().map(|hit| hit.id).collect::<Vec<_>>(), [1, 2]);
+    }
 
     #[test]
     fn reading_progress_comes_from_the_status_line() {

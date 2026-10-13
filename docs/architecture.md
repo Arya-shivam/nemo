@@ -2,6 +2,7 @@
 
 - [Overview](#overview)
 - [Text recognition](#text-recognition)
+- [Visual search](#visual-search)
 - [Index and search](#index-and-search)
 - [Search window](#search-window)
 - [Operating systems](#operating-systems)
@@ -9,13 +10,56 @@
 
 ## Overview
 
+```mermaid
+flowchart LR
+    subgraph Sources
+        folders["Screenshot folders"]
+        command["gyotaku CLI\nindex / watch / search / ocr / stats"]
+        user["Search input"]
+    end
+
+    subgraph Reader["Background reader: crates/cli"]
+        watch["Watch folder changes\nand scan existing files"]
+        indexer["Skip unchanged files\nload image and make thumbnail"]
+    end
+
+    subgraph Recognition["Recognition: crates/ocr"]
+        detect["Detect text regions"]
+        recognize["Recognize lines\nand their positions"]
+        image_encoder["TinyCLIP image encoder"]
+        text_encoder["TinyCLIP text encoder"]
+    end
+
+    subgraph Shared["Shared data and rules: crates/core"]
+        query["Parse terms and filters"]
+        index["SQLite index\ntext, paths, dates, line boxes, vectors"]
+        thumbs["Thumbnail cache"]
+    end
+
+    subgraph Window["Search window: crates/app"]
+        app["GPUI search and results grid"]
+        images["Decode visible thumbnails\nin the background"]
+    end
+
+    folders --> watch --> indexer
+    command -->|"index or watch"| indexer
+    indexer --> detect --> recognize -->|"text and boxes"| index
+    indexer --> image_encoder -->|"image vector"| index
+
+    user --> app
+    command -->|"search"| query
+    app --> query --> index
+    app --> text_encoder -->|"query vector"| index
+    index -->|"OCR and visual matches"| app
+    thumbs --> images --> app
+
+    classDef storage fill:#f4f1ec,stroke:#45413b,color:#24211d
+    class index,thumbs storage
 ```
-Screenshot saved to a watched folder
-  1. The indexer is notified through inotify and runs at idle priority
-  2. OCR extracts each line of text and its bounding box
-  3. Lines are stored in SQLite, with a full-text index using the trigram tokenizer
-  4. The search window queries the index on every keystroke
-```
+
+The CLI reader and search window are separate programs. They share the SQLite
+index and thumbnail cache through `crates/core`. Platform-specific watching,
+launching, hotkeys, and clipboard behavior are kept behind platform modules.
 
 gyotaku does not capture screenshots. It indexes the folders that existing screenshot tools write to. An existing backlog is indexed newest first, since recent screenshots are the most likely to be searched for.
 
@@ -50,6 +94,23 @@ Single-character lines are discarded, because interface icons are frequently rec
 The default recognizer covers Latin, Chinese, Japanese and Greek. Other scripts are opt-in, each with a recognizer of its own that is downloaded the first time it is enabled. Devanagari uses PaddleOCR's PP-OCRv5 Devanagari model (7.9 MB), whose alphabet also includes Latin letters, digits and punctuation.
 
 Detection runs once and the default recognizer reads every line. A line is read again by the extra recognizer when the default one was unsure of it (score under 0.9), or when it contains a long unread stretch: CTC decoding reports the longest run of blank steps, and a glyph outside the model's alphabet produces exactly that. A line that is half English and half Hindi reads the English confidently and leaves a gap of 24 steps where the Hindi was; fully read lines have gaps of 2 to 5. The second reading replaces the first only if it scores higher and contains the script it is for, so enabling a script never changes how English or Chinese text is read.
+
+## Visual search
+
+The same OCR and search window also support semantic image retrieval for
+screenshots with little or no readable text. The indexer uses a pinned,
+MIT-licensed [TinyCLIP ONNX export](https://huggingface.co/onnx-community/TinyCLIP-ViT-8M-16-Text-3M-YFCC15M-ONNX/tree/9463a9c508a344c837ffefe9d724f3827bf2dc79)
+to embed each screenshot; the search window embeds query words with the
+matching text encoder. Both produce normalized vectors stored in
+`visual_embeddings`, keyed by screenshot ID and model ID, alongside the
+existing OCR index.
+
+Text and visual results are merged in the search window, with exact OCR matches
+given extra weight. Existing screenshots missing a vector are backfilled by the
+background indexer without rerunning OCR. If the model cannot be downloaded or
+loaded, indexing and search continue with OCR alone. The model and tokenizer
+are downloaded on first use; inference thereafter runs locally through ONNX
+Runtime.
 
 ## Index and search
 

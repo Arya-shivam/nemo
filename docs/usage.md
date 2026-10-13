@@ -24,9 +24,12 @@ Open the search window with your shortcut and start typing. Results update on ev
 | Case | Matching is case-insensitive. |
 | Special characters | Input is always treated as literal text. `c++`, `NOT` and unbalanced quotes are valid queries. |
 | Short words | Words of one or two characters are supported. The index is built from three-character sequences, so these are matched by scanning the results of the other terms. |
-| Ordering | Results are ranked by match quality, then by modification time, newest first. An empty query lists all screenshots, newest first. |
+| Visual matches | Text searches also compare query meaning with screenshot images, so visually similar screenshots can appear even when OCR finds no matching words. TinyCLIP is downloaded on first use; if it cannot load, OCR search remains available. |
+| Ordering | OCR and visual rankings are merged, with exact OCR matches weighted more. An empty query lists all screenshots, newest first. |
 
-While a query is active, each thumbnail is dimmed and the matched lines are highlighted in place.
+Visual search runs in the search window. The `gyotaku search` command remains OCR-only.
+
+While a query is active, thumbnails are dimmed; OCR lines matching the query are highlighted.
 
 ### Filters
 
@@ -224,8 +227,8 @@ To check a single image: `gyotaku ocr --script devanagari path/to/screenshot.png
 | Path | Contents |
 |---|---|
 | `~/.config/gyotaku/config.toml` | Folders, theme, cores per screenshot, extra scripts |
-| `~/.local/share/gyotaku/index.db` | Text index |
-| `~/.local/share/gyotaku/models/` | OCR models |
+| `~/.local/share/gyotaku/index.db` | OCR text and visual embeddings |
+| `~/.local/share/gyotaku/models/` | OCR and TinyCLIP models |
 | `~/.local/share/gyotaku/runtime/` | ONNX Runtime |
 | `~/.cache/gyotaku/thumbs/` | Thumbnails. Safe to delete. |
 

@@ -1,9 +1,12 @@
-//! OCR for screenshots: PP-OCRv6 detection and recognition models running on
-//! ONNX Runtime, with the pre and post processing written for this project.
+//! Recognition and TinyCLIP image embeddings for screenshots, using models on
+//! ONNX Runtime with pre and post processing written for this project.
 
 mod det;
-mod models;
+pub(crate) mod models;
 mod rec;
+mod vision;
+
+pub use vision::{EMBEDDING_DIM, MODEL_ID, Vision};
 
 use std::path::Path;
 use std::sync::OnceLock;
@@ -160,7 +163,7 @@ fn worth_keeping(text: &str) -> bool {
 
 /// ONNX Runtime is loaded at run time rather than linked in, see
 /// `models::runtime` for why. Once per process.
-fn load_runtime() -> Result<()> {
+pub(crate) fn load_runtime() -> Result<()> {
     static LOADED: OnceLock<()> = OnceLock::new();
     if LOADED.get().is_some() {
         return Ok(());
@@ -176,14 +179,14 @@ fn load_runtime() -> Result<()> {
 /// A model file that won't load is damaged (a disk filling up mid-write, a
 /// file someone edited): it's deleted, so the next start downloads it again
 /// instead of failing the same way forever.
-fn load(model: &models::Model, threads: usize) -> Result<Session> {
+pub(crate) fn load(model: &models::Model, threads: usize) -> Result<Session> {
     let path = models::ensure(model)?;
     session(&path, threads).inspect_err(|_| {
         let _ = std::fs::remove_file(&path);
     })
 }
 
-fn session(model: &Path, threads: usize) -> Result<Session> {
+pub(crate) fn session(model: &Path, threads: usize) -> Result<Session> {
     let build = || -> ort::Result<Session> {
         // No arena and no memory pattern: every screenshot is a different size,
         // so both just hold on to the peak of the biggest one forever.

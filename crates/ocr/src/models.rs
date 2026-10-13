@@ -52,6 +52,24 @@ pub const REC: Model = Model {
     sha256: "6f327246b50388f3c176ae304bd95767ea6dc0c9ae92153ef8cbe210b3c14884",
 };
 
+// TinyCLIP ViT-8M/16, the MIT-licensed ONNX export. Pin the repository
+// revision and checksum because embeddings are only comparable within a model.
+pub const TINYCLIP: Model = Model {
+    file: "tinyclip-int8.onnx",
+    urls: &[
+        "https://huggingface.co/onnx-community/TinyCLIP-ViT-8M-16-Text-3M-YFCC15M-ONNX/resolve/9463a9c508a344c837ffefe9d724f3827bf2dc79/onnx/model_int8.onnx",
+    ],
+    sha256: "844d1a46ab18acf50c989e541b12fe3b6dc7f8d6004725b4e992d142788e0600",
+};
+
+pub const TINYCLIP_TOKENIZER: Model = Model {
+    file: "tinyclip-tokenizer.json",
+    urls: &[
+        "https://huggingface.co/onnx-community/TinyCLIP-ViT-8M-16-Text-3M-YFCC15M-ONNX/resolve/9463a9c508a344c837ffefe9d724f3827bf2dc79/tokenizer.json",
+    ],
+    sha256: "6d9109cc838977f3ca94a379eec36aecc7c807e1785cd729660ca2fc0171fb35",
+};
+
 // PP-OCRv6 has no Devanagari recognizer yet, so this is PP-OCRv5's, the
 // newest there is. Its alphabet is the Devanagari block plus digits, Latin
 // letters and punctuation, so mixed Hindi and English lines read whole.

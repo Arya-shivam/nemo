@@ -143,6 +143,13 @@ fn index(dirs: &[PathBuf], threads: usize) -> Result<()> {
     for (i, path) in files.iter().enumerate() {
         match indexer.index_file(path) {
             Ok(Outcome::Unchanged | Outcome::Thumbnail) => continue,
+            Ok(Outcome::Visual) => {
+                eprintln!(
+                    "[{:>5}/{total}] visual embedding  {}",
+                    i + 1,
+                    path.display()
+                )
+            }
             Ok(Outcome::NotYet) => {
                 eprintln!(
                     "[{:>5}/{total}] still being written, run again later: {}",

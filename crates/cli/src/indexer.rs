@@ -8,7 +8,7 @@ use fast_image_resize::{FilterType, ResizeAlg, ResizeOptions, Resizer};
 use gyotaku_core::{Index, Script, Shot};
 
 use crate::platform;
-use gyotaku_ocr::Ocr;
+use gyotaku_ocr::{MODEL_ID, Ocr, Vision};
 use image::RgbImage;
 use image::codecs::jpeg::JpegEncoder;
 
@@ -25,6 +25,7 @@ const EXTENSIONS: [&str; 4] = ["png", "jpg", "jpeg", "webp"];
 
 pub enum Outcome {
     Unchanged,
+    Visual,
     Thumbnail,
     Indexed {
         lines: usize,
@@ -45,31 +46,48 @@ const STILL_WRITING: Duration = Duration::from_secs(10);
 pub struct Indexer {
     pub index: Index,
     ocr: Ocr,
+    vision: Option<Vision>,
 }
 
 impl Indexer {
     pub fn new(threads: usize, scripts: &[Script]) -> Result<Self> {
-        Ok(Self {
-            index: Index::open_default()?,
-            ocr: Ocr::new(threads, scripts)?,
-        })
+        let index = Index::open_default()?;
+        let ocr = Ocr::new(threads, scripts)?;
+        let vision = match Vision::new(threads) {
+            Ok(vision) => Some(vision),
+            Err(e) => {
+                eprintln!("visual search unavailable: {e:#}");
+                None
+            }
+        };
+        Ok(Self { index, ocr, vision })
     }
 
     /// A new reader for changed settings. On an error (a script's model that
     /// can't be downloaded right now) the old one stays.
     pub fn set_reader(&mut self, threads: usize, scripts: &[Script]) -> Result<()> {
         self.ocr = Ocr::new(threads, scripts)?;
+        match Vision::new(threads) {
+            Ok(vision) => self.vision = Some(vision),
+            Err(e) => eprintln!("visual search unavailable: {e:#}"),
+        }
         Ok(())
     }
 
     /// Whether reading this file would do anything: it's new or changed, or
-    /// its thumbnail went missing. Cheap (a stat and a lookup), so a library
-    /// can be sorted into what needs work before any of it starts.
+    /// its thumbnail or visual embedding is missing. Cheap checks let a
+    /// library be sorted into work before image processing starts.
     pub fn needs_reading(&self, path: &Path) -> bool {
         let Ok(mtime) = mtime(path) else {
             return false;
         };
         if !self.index.is_current(path, mtime).unwrap_or(false) {
+            return true;
+        }
+        let visual_missing = self.vision.is_some()
+            && self.index.is_visible(path).unwrap_or(false)
+            && !self.index.has_embedding(path, MODEL_ID).unwrap_or(false);
+        if visual_missing {
             return true;
         }
         let thumb_missing = gyotaku_core::thumb_path(path).is_ok_and(|t| !t.exists());
@@ -82,14 +100,32 @@ impl Indexer {
         }
         let mtime = mtime(path)?;
         if self.index.is_current(path, mtime)? {
-            // The thumbnail cache can be wiped (or its format change) without
-            // the text going stale, and redrawing one is ~50 ms against ~600
-            // for OCR, so only the thumbnail gets redone.
+            let visible = self.index.is_visible(path)?;
             let thumb = gyotaku_core::thumb_path(path)?;
-            if !thumb.exists() && self.index.is_visible(path)? {
-                write_thumbnail(&gyotaku_ocr::load_image(path)?, &thumb)?;
+            let thumbnail_missing = visible && !thumb.exists();
+            let visual_missing =
+                visible && self.vision.is_some() && !self.index.has_embedding(path, MODEL_ID)?;
+            if thumbnail_missing || visual_missing {
+                let img = gyotaku_ocr::load_image(path)?;
+                if thumbnail_missing {
+                    write_thumbnail(&img, &thumb)?;
+                }
+                if visual_missing && let Some(vision) = &mut self.vision {
+                    match vision.image_embedding(&img) {
+                        Ok(vector) => {
+                            self.index.store_embedding(path, MODEL_ID, &vector)?;
+                        }
+                        Err(e) => {
+                            eprintln!("visual embedding failed for {}: {e:#}", path.display())
+                        }
+                    }
+                }
                 platform::release_memory();
-                return Ok(Outcome::Thumbnail);
+                return Ok(if visual_missing {
+                    Outcome::Visual
+                } else {
+                    Outcome::Thumbnail
+                });
             }
             return Ok(Outcome::Unchanged);
         }
@@ -123,7 +159,20 @@ impl Indexer {
             height: img.height(),
             look: Some(look),
         };
-        self.index.insert(&shot, &lines)?;
+        let vector = self.vision.as_mut().and_then(|vision| {
+            vision
+                .image_embedding(&img)
+                .map_err(|e| {
+                    eprintln!("visual embedding failed for {}: {e:#}", path.display());
+                    e
+                })
+                .ok()
+        });
+        self.index.insert_with_embedding(
+            &shot,
+            &lines,
+            vector.as_ref().map(|v| (MODEL_ID, v.as_slice())),
+        )?;
 
         drop(img);
         platform::release_memory();

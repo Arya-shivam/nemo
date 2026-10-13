@@ -585,6 +585,7 @@ fn index(indexer: &mut Indexer, path: &Path) -> Read {
         Ok(Outcome::Indexed { lines, took }) => {
             eprintln!("indexed {} ({lines} lines, {took:.1?})", path.display());
         }
+        Ok(Outcome::Visual) => eprintln!("visual embedding {}", path.display()),
         Ok(Outcome::Hidden(why)) => eprintln!("skipped {}: {why}", path.display()),
         Ok(Outcome::Unchanged | Outcome::Thumbnail) => {}
         Ok(Outcome::NotYet) => return Read::Again,

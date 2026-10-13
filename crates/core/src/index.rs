@@ -14,7 +14,7 @@ use crate::{Line, Rect, Shot};
 // so an unknown version gets dropped and rebuilt, but reading everything
 // again takes most of an hour on a big folder, so a version that can be
 // brought forward from the text already stored is, see `init`.
-const SCHEMA: i32 = 3;
+const SCHEMA: i32 = 4;
 
 // The trigram tokenizer indexes every 3 character window, which is what makes
 // "nutsmp" find "donutsmp.net". The flip side is that it cannot match anything
@@ -56,6 +56,15 @@ const BURSTS: &str = "
     ALTER TABLE shots ADD COLUMN look INTEGER;
     ALTER TABLE shots ADD COLUMN burst INTEGER;
     CREATE INDEX shots_by_mtime ON shots(mtime);
+";
+
+const VISUAL: &str = "
+    CREATE TABLE visual_embeddings (
+        shot_id INTEGER PRIMARY KEY REFERENCES shots(id) ON DELETE CASCADE,
+        model   TEXT NOT NULL,
+        vector  BLOB NOT NULL
+    );
+    CREATE INDEX visual_by_model ON visual_embeddings(model, shot_id);
 ";
 
 pub struct Index {
@@ -113,7 +122,6 @@ impl Index {
             SCHEMA => {}
             // Version 1 had everything but the folded text, which can be
             // made from the text it already has, and version 2 everything
-            // but the bursts, which the reader works out in the background.
             1 | 2 => {
                 if version == 1 {
                     tx.execute_batch(NEAR)?;
@@ -127,11 +135,17 @@ impl Index {
                     }
                 }
                 tx.execute_batch(BURSTS)?;
+                tx.execute_batch(VISUAL)?;
+                tx.pragma_update(None, "user_version", SCHEMA)?;
+            }
+            3 => {
+                tx.execute_batch(VISUAL)?;
                 tx.pragma_update(None, "user_version", SCHEMA)?;
             }
             _ => {
                 tx.execute_batch(
-                    "DROP TABLE IF EXISTS shots_near;
+                    "DROP TABLE IF EXISTS visual_embeddings;
+                     DROP TABLE IF EXISTS shots_near;
                      DROP TABLE IF EXISTS shots_fts;
                      DROP TABLE IF EXISTS lines;
                      DROP TABLE IF EXISTS shots;",
@@ -139,6 +153,7 @@ impl Index {
                 tx.execute_batch(TABLES)?;
                 tx.execute_batch(NEAR)?;
                 tx.execute_batch(BURSTS)?;
+                tx.execute_batch(VISUAL)?;
                 tx.pragma_update(None, "user_version", SCHEMA)?;
             }
         }
@@ -185,6 +200,17 @@ impl Index {
 
     /// Stores a shot and its lines, replacing whatever was there for the same path.
     pub fn insert(&mut self, shot: &Shot, lines: &[Line]) -> Result<i64> {
+        self.insert_with_embedding(shot, lines, None)
+    }
+
+    /// Stores a shot, its OCR lines, and optionally its visual embedding in
+    /// the same transaction, so a shot never appears half-indexed.
+    pub fn insert_with_embedding(
+        &mut self,
+        shot: &Shot,
+        lines: &[Line],
+        visual: Option<(&str, &[f32])>,
+    ) -> Result<i64> {
         let tx = self.write()?;
         let path = path_str(&shot.path);
         delete(&tx, &path)?;
@@ -212,8 +238,6 @@ impl Index {
             }
         }
 
-        // One fts row per screenshot, not per line, so a query like
-        // "invoice march" matches even when the two words sit on different lines.
         let text = lines
             .iter()
             .map(|l| l.text.as_str())
@@ -227,10 +251,117 @@ impl Index {
             "INSERT INTO shots_near (rowid, text) VALUES (?1, ?2)",
             params![id, fold(&text)],
         )?;
+        if let Some((model, vector)) = visual {
+            write_embedding(&tx, id, model, vector)?;
+        }
         settle(&tx, id)?;
 
         tx.commit()?;
         Ok(id)
+    }
+
+    pub fn has_embedding(&self, path: &Path, model: &str) -> Result<bool> {
+        let found = self
+            .db
+            .query_row(
+                "SELECT 1 FROM visual_embeddings e JOIN shots s ON s.id = e.shot_id
+                 WHERE s.path = ?1 AND e.model = ?2",
+                params![path_str(path), model],
+                |_| Ok(()),
+            )
+            .optional()?;
+        Ok(found.is_some())
+    }
+
+    pub fn visual_len(&self, model: &str) -> Result<usize> {
+        let count: i64 = self.db.query_row(
+            "SELECT count(*) FROM visual_embeddings e JOIN shots s ON s.id = e.shot_id
+             WHERE e.model = ?1 AND s.width > 0",
+            [model],
+            |r| r.get(0),
+        )?;
+        Ok(count as usize)
+    }
+
+    /// Stores or replaces the visual vector for an existing shot.
+    pub fn store_embedding(&mut self, path: &Path, model: &str, vector: &[f32]) -> Result<bool> {
+        let tx = self.write()?;
+        let Some(id) = tx
+            .query_row(
+                "SELECT id FROM shots WHERE path = ?1 AND width > 0",
+                [path_str(path)],
+                |r| r.get::<_, i64>(0),
+            )
+            .optional()?
+        else {
+            return Ok(false);
+        };
+        write_embedding(&tx, id, model, vector)?;
+        tx.commit()?;
+        Ok(true)
+    }
+
+    /// Ranks indexed screenshots by cosine similarity to a text embedding.
+    /// Path and date filters apply before ranking.
+    pub fn find_visual(
+        &self,
+        query: &[f32],
+        parsed: &Query,
+        model: &str,
+        limit: usize,
+    ) -> Result<Vec<(Hit, f32)>> {
+        if query.is_empty() || limit == 0 {
+            return Ok(Vec::new());
+        }
+        let mut sql = String::from(
+            "SELECT s.id, s.path, s.mtime, s.width, s.height, s.look,
+                    COALESCE(s.burst, s.id), e.vector
+             FROM visual_embeddings e JOIN shots s ON s.id = e.shot_id
+             WHERE e.model = ? AND s.width > 0",
+        );
+        let mut args = vec![Value::Text(model.to_owned())];
+        for filter in &parsed.filters {
+            match filter {
+                Filter::In(name) => {
+                    let name = escape_like(name);
+                    sql.push_str(" AND (s.path LIKE ? ESCAPE '\\' OR s.path LIKE ? ESCAPE '\\')");
+                    args.push(Value::Text(format!("%/{name}%/%")));
+                    args.push(Value::Text(format!("%\\\\{name}%\\\\%")));
+                }
+                Filter::Since(t) => {
+                    sql.push_str(" AND s.mtime >= ?");
+                    args.push(Value::Integer(*t));
+                }
+                Filter::Until(t) => {
+                    sql.push_str(" AND s.mtime < ?");
+                    args.push(Value::Integer(*t));
+                }
+            }
+        }
+        let mut stmt = self.db.prepare_cached(&sql)?;
+        let mut ranked = Vec::new();
+        for row in stmt.query_map(params_from_iter(args), |r| {
+            Ok((
+                Hit {
+                    id: r.get(0)?,
+                    path: PathBuf::from(r.get::<_, String>(1)?),
+                    mtime: r.get(2)?,
+                    width: r.get(3)?,
+                    height: r.get(4)?,
+                    lines: Vec::new(),
+                    near: false,
+                    look: r.get::<_, Option<i64>>(5)?.map(|l| l as u64),
+                    burst: r.get(6)?,
+                },
+                r.get::<_, Vec<u8>>(7)?,
+            ))
+        })? {
+            let (hit, bytes) = row?;
+            ranked.push((hit, cosine(query, &bytes)?));
+        }
+        ranked.sort_by(|a, b| b.1.total_cmp(&a.1).then_with(|| b.0.mtime.cmp(&a.0.mtime)));
+        ranked.truncate(limit);
+        Ok(ranked)
     }
 
     /// Shots whose burst hasn't been worked out yet, newest first, with
@@ -694,6 +825,34 @@ fn reads_as(text: &[char], term: &[char], swaps: usize) -> bool {
     })
 }
 
+fn write_embedding(
+    tx: &rusqlite::Transaction<'_>,
+    id: i64,
+    model: &str,
+    vector: &[f32],
+) -> Result<()> {
+    if vector.is_empty() || vector.iter().any(|v| !v.is_finite()) {
+        anyhow::bail!("visual embedding must contain finite values");
+    }
+    let bytes: Vec<u8> = vector.iter().flat_map(|v| v.to_le_bytes()).collect();
+    tx.execute(
+        "INSERT INTO visual_embeddings (shot_id, model, vector) VALUES (?1, ?2, ?3)
+         ON CONFLICT(shot_id) DO UPDATE SET model = excluded.model, vector = excluded.vector",
+        params![id, model, bytes],
+    )?;
+    Ok(())
+}
+
+fn cosine(query: &[f32], bytes: &[u8]) -> Result<f32> {
+    if !bytes.len().is_multiple_of(4) || bytes.len() / 4 != query.len() {
+        anyhow::bail!("stored visual embedding has an unexpected dimension");
+    }
+    Ok(query
+        .iter()
+        .zip(bytes.chunks_exact(4))
+        .map(|(q, b)| q * f32::from_le_bytes([b[0], b[1], b[2], b[3]]))
+        .sum())
+}
 fn escape_like(term: &str) -> String {
     term.replace('\\', "\\\\")
         .replace('%', "\\%")
@@ -987,6 +1146,76 @@ mod tests {
             ["/shots/youtube.png"]
         );
         assert_eq!(idx.search("", 10).unwrap().len(), 2);
+    }
+
+    #[test]
+    fn visual_search_ranks_embeddings_and_applies_folder_filters() {
+        let mut idx = Index::open_in_memory().unwrap();
+        idx.insert_with_embedding(
+            &shot("/shots/work/chart.png", 100),
+            &[],
+            Some(("tinyclip-test", &[1.0, 0.0])),
+        )
+        .unwrap();
+        idx.insert_with_embedding(
+            &shot("/shots/personal/map.png", 200),
+            &[],
+            Some(("tinyclip-test", &[0.0, 1.0])),
+        )
+        .unwrap();
+
+        let query = [0.0, 1.0];
+        let ranked = idx
+            .find_visual(&query, &Query::parse(""), "tinyclip-test", 10)
+            .unwrap();
+        assert_eq!(
+            ranked
+                .iter()
+                .map(|(hit, _)| hit.path.to_str().unwrap())
+                .collect::<Vec<_>>(),
+            ["/shots/personal/map.png", "/shots/work/chart.png"]
+        );
+        assert_eq!(ranked[0].1, 1.0);
+
+        let filtered = idx
+            .find_visual(&query, &Query::parse("in:work"), "tinyclip-test", 10)
+            .unwrap();
+        assert_eq!(
+            filtered
+                .iter()
+                .map(|(hit, _)| hit.path.to_str().unwrap())
+                .collect::<Vec<_>>(),
+            ["/shots/work/chart.png"]
+        );
+    }
+
+    #[test]
+    fn replacing_or_removing_a_shot_removes_its_old_embedding() {
+        let mut idx = Index::open_in_memory().unwrap();
+        idx.insert_with_embedding(
+            &shot("/shots/chart.png", 100),
+            &[],
+            Some(("tinyclip-test", &[1.0, 0.0])),
+        )
+        .unwrap();
+        idx.insert_with_embedding(
+            &shot("/shots/chart.png", 200),
+            &[],
+            Some(("tinyclip-test", &[0.0, 1.0])),
+        )
+        .unwrap();
+
+        let results = idx
+            .find_visual(&[1.0, 0.0], &Query::parse(""), "tinyclip-test", 10)
+            .unwrap();
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].1, 0.0);
+        idx.remove(Path::new("/shots/chart.png")).unwrap();
+        assert!(
+            idx.find_visual(&[0.0, 1.0], &Query::parse(""), "tinyclip-test", 10)
+                .unwrap()
+                .is_empty()
+        );
     }
 
     #[test]
