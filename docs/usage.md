@@ -31,6 +31,8 @@ Visual search runs in the search window. The `gyotaku search` command remains OC
 
 While a query is active, thumbnails are dimmed; OCR lines matching the query are highlighted.
 
+Thumbnails and the opened screenshot show a display title from the first OCR line with at least three letters and confidence of 0.7 or higher. Whitespace is normalized and long titles are shortened. If no line qualifies, the original filename is shown. Titles use already-indexed OCR text, so existing screenshots get them without reindexing. This is a display aid, not a generated summary: files are never renamed and search behavior is unchanged.
+
 ### Filters
 
 A word of the form `key:value` with one of the keys below narrows the results by where or when a screenshot was taken. Filters combine with words and with each other, and are shown dimmed in the search box once they are complete. A query made only of filters, such as `date:today`, lists every screenshot they allow, newest first.

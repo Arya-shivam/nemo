@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  Search every screenshot you have ever taken by the text inside it.<br>
+  Search every screenshot by its text or visual content.<br>
   Native on Linux and Windows, fully offline, and fast on any hardware, with or without a GPU.
 </p>
 
@@ -21,7 +21,9 @@
   <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs welcome" /></a>
 </p>
 
-gyotaku reads the text in every screenshot you take and makes it searchable. Press a shortcut, type a few letters of anything you remember seeing, and every matching screenshot appears with the matched words highlighted in place. Open one to copy its text, a selection of lines, or the image itself.
+gyotaku reads text and indexes visual content in every screenshot, so you can search by words or describe what you remember seeing. Screenshots with little or no readable text can appear in visual search results. Open one to copy its text, a selection of lines, or the image itself.
+
+This fork of [gyotaku](https://github.com/xevrion/gyotaku) adds local TinyCLIP-based visual search alongside OCR (2026-10-15).
 
 All processing happens locally. gyotaku does not take screenshots itself; it indexes the folders your existing screenshot tool saves to.
 
@@ -103,7 +105,7 @@ On first launch, gyotaku asks:
 
 Indexing starts immediately, newest screenshots first, at idle CPU and I/O priority. Search is available while it runs.
 
-Before the first screenshot is read, gyotaku downloads the OCR models once (22 MB), and on Linux ONNX Runtime as well (24 MB). No network access is needed after that.
+Before the first screenshot is read, gyotaku downloads the OCR models once (22 MB) and the TinyCLIP model and tokenizer for visual search. On Linux it downloads ONNX Runtime as well (24 MB). No network access is needed after that.
 
 ### Updating
 
@@ -209,7 +211,7 @@ See the [usage guide](docs/usage.md) for all keys, settings and commands.
 
 ## Privacy
 
-gyotaku runs entirely on your machine. It has no telemetry, accounts or update checks. Its only network access is the one-time download of the OCR models (from this repository's releases, with ModelScope as a fallback) and ONNX Runtime (Microsoft's official build, from GitHub), each verified against a pinned SHA-256 checksum before use.
+gyotaku runs entirely on your machine. It has no telemetry, accounts or update checks. Its only network access is the one-time download of the OCR models (from this repository's releases, with ModelScope as a fallback), the TinyCLIP model and tokenizer (from Hugging Face), and ONNX Runtime (Microsoft's official build, from GitHub). Each is verified against a pinned SHA-256 checksum before use.
 
 ## Roadmap
 
@@ -224,7 +226,7 @@ gyotaku runs entirely on your machine. It has no telemetry, accounts or update c
 - [ ] Optional classification of screenshots (one-time codes, receipts, chats) with Jev, to find and clear out the throwaway ones. Opt-in and off by default; only the recognized text is sent, never the image
 - [x] Typo-tolerant search for OCR misreads: look-alike characters (`0` and `O`, `rn` and `m`, `l` and `1`). Exact matches always rank first, and near matches are labelled as such, with the text exactly as it was read, so an error code is never silently "corrected"
 - [ ] Words the OCR split apart (`ord er` for `order`), without matching words that really are apart: joining them naively found "HOURS IN VOICE" for `invoice`
-- [ ] Search by what a screenshot shows, not only the text in it ("the one with a cat"), using a small local image embedding model such as CLIP. Optional, offline, and fast enough without a GPU
+- [x] Search by what a screenshot shows, not only its text, using local TinyCLIP embeddings alongside OCR
 - [x] A keyboard shortcuts page in settings that lists every shortcut and lets each one be rebound by pressing the new keys
 - [ ] Screenshots that only ever go to the clipboard: an opt-in setting that saves images copied to the clipboard into a folder of their own, so they become searchable like any other screenshot. Works on Linux (Wayland and X11); the Windows side is written but not yet tried on a real machine
 - [x] Group bursts of near-identical screenshots into one tile, with the rest a key away
@@ -279,4 +281,4 @@ Gyotaku (魚拓) is a traditional Japanese method of recording a catch: the fish
 
 gyotaku is licensed under the [GNU General Public License v3.0 or later](LICENSE).
 
-IBM Plex Sans is bundled under the SIL Open Font License 1.1 ([`crates/app/fonts/OFL.txt`](crates/app/fonts/OFL.txt)). The PaddleOCR models are licensed under Apache-2.0; they are downloaded at runtime and not distributed with this repository.
+IBM Plex Sans is bundled under the SIL Open Font License 1.1 ([`crates/app/fonts/OFL.txt`](crates/app/fonts/OFL.txt)). The PaddleOCR models are licensed under Apache-2.0 and the TinyCLIP ONNX model under MIT; they are downloaded at runtime and not distributed with this repository.

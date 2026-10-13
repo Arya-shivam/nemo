@@ -137,6 +137,7 @@ pub struct Gyotaku {
     /// The lines each hit matched on, looked up the first time its tile is
     /// drawn rather than for every hit up front.
     matched: HashMap<i64, Rc<Vec<Line>>>,
+    titles: HashMap<i64, SharedString>,
     thumb_paths: Vec<PathBuf>,
     thumbs: Images,
     full: Images,
@@ -316,6 +317,7 @@ impl Gyotaku {
             grouped: config.group_similar,
             found: 0,
             matched: HashMap::new(),
+            titles: HashMap::new(),
             thumb_paths: Vec::new(),
             thumbs: Images::new(THUMB_CACHE, THUMB_MAX_SIDE),
             full: Images::new(FULL_CACHE, FULL_MAX_SIDE),
@@ -559,6 +561,7 @@ impl Gyotaku {
         self.parsed = parsed.clone();
         self.limit = limit;
         self.matched.clear();
+        self.titles.clear();
         self.thumb_paths = self
             .hits
             .iter()
@@ -633,6 +636,7 @@ impl Gyotaku {
             .and_then(|id| self.hits.iter().position(|hit| hit.id == id))
             .unwrap_or(0);
         self.matched.clear();
+        self.titles.clear();
         self.thumb_paths = self
             .hits
             .iter()
@@ -776,6 +780,25 @@ impl Gyotaku {
                         .matching_lines(hit.id, query, hit.near)
                         .unwrap_or_default(),
                 )
+            })
+            .clone()
+    }
+
+    fn display_title(&mut self, item: usize) -> SharedString {
+        let hit = &self.hits[item];
+        let index = &self.index;
+        self.titles
+            .entry(hit.id)
+            .or_insert_with(|| {
+                let lines = index.lines(hit.id).unwrap_or_default();
+                ocr_title(lines.iter().map(|line| (line.text.as_str(), line.score)))
+                    .unwrap_or_else(|| {
+                        hit.path
+                            .file_name()
+                            .map(|name| name.to_string_lossy().into_owned())
+                            .unwrap_or_default()
+                    })
+                    .into()
             })
             .clone()
     }
@@ -1606,6 +1629,7 @@ impl Gyotaku {
         let theme = *cx.global::<Theme>();
         let thumb = self.image(&path, Some(&original), window, cx);
         let lines = self.matched_lines(i);
+        let title = self.display_title(i);
         let hit = &self.hits[i];
         let (id, near) = (hit.id, hit.near);
         // How many similar shots this tile leads, and whether they're
@@ -1763,6 +1787,21 @@ impl Gyotaku {
                     .child(label),
             );
         }
+
+        inner = inner.child(
+            div()
+                .absolute()
+                .bottom_0()
+                .left_0()
+                .right_0()
+                .px(px(8.))
+                .py(px(4.))
+                .bg(theme.panel)
+                .text_xs()
+                .text_color(theme.text)
+                .text_ellipsis()
+                .child(title),
+        );
 
         let mut tile = div()
             .id(("tile", i))
@@ -2100,6 +2139,7 @@ impl Gyotaku {
         let full_path = self.hits.get(shown)?.path.clone();
         let thumb = self.image(&thumb_path, Some(&full_path), window, cx);
         let full = self.image(&full_path, None, window, cx);
+        let name = self.display_title(shown);
         let d = self.detail.as_mut()?;
         let hit = self.hits.get(d.hit)?;
         let p = d.open.value;
@@ -2187,11 +2227,6 @@ impl Gyotaku {
                     .opacity(0.6)
             });
 
-        let name = hit
-            .path
-            .file_name()
-            .map(|n| n.to_string_lossy().into_owned())
-            .unwrap_or_default();
         let when = taken_at(hit.mtime);
 
         Some(
@@ -2848,9 +2883,51 @@ fn taken_at(mtime: i64) -> String {
         .unwrap_or_default()
 }
 
+fn ocr_title<'a>(lines: impl IntoIterator<Item = (&'a str, f32)>) -> Option<String> {
+    let (text, _) = lines.into_iter().find(|(text, score)| {
+        *score >= 0.7 && text.chars().filter(|c| c.is_alphabetic()).take(3).count() == 3
+    })?;
+    let mut title = String::new();
+    for word in text.split_whitespace() {
+        if !title.is_empty() {
+            title.push(' ');
+        }
+        title.push_str(word);
+        if title.chars().count() > 72 {
+            title = title.chars().take(72).collect();
+            title.push_str("...");
+            break;
+        }
+    }
+    Some(title)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn titles_skip_unreliable_text_and_normalize_whitespace() {
+        assert_eq!(
+            ocr_title([
+                ("Noise", 0.2),
+                ("12:34", 0.99),
+                ("  Order\n confirmation ", 0.95)
+            ]),
+            Some("Order confirmation".into())
+        );
+        assert_eq!(ocr_title([("1234", 0.99), ("Unreadable", 0.1)]), None);
+        assert_eq!(ocr_title([]), None);
+    }
+
+    #[test]
+    fn titles_truncate_unicode_without_splitting_characters() {
+        let text = "猫".repeat(80);
+        assert_eq!(
+            ocr_title([(text.as_str(), 0.95)]),
+            Some(format!("{}...", "猫".repeat(72)))
+        );
+    }
 
     #[test]
     fn visual_results_add_semantic_matches_without_duplicating_ocr_hits() {
