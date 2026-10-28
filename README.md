@@ -211,7 +211,7 @@ See the [usage guide](docs/usage.md) for all keys, settings and commands.
 
 ## Privacy
 
-gyotaku runs entirely on your machine. It has no telemetry, accounts or update checks. Its only network access is the one-time download of the OCR models (from this repository's releases, with ModelScope as a fallback), the TinyCLIP model and tokenizer (from Hugging Face), and ONNX Runtime (Microsoft's official build, from GitHub). Each is verified against a pinned SHA-256 checksum before use.
+Screenshot indexing and search run on your machine, with no telemetry or update checks. OCR models, the TinyCLIP model and tokenizer, and ONNX Runtime are downloaded and verified against pinned SHA-256 checksums. The separate, optional Categorize feature sends filenames to TypeSafe's hosted Jev API when explicitly started. Its image mode also uploads image previews. Categorization requires an API key and network access.
 
 ## Roadmap
 
@@ -223,7 +223,7 @@ gyotaku runs entirely on your machine. It has no telemetry, accounts or update c
 - [x] A landing page with a demo, the measured numbers and the install commands
 - [x] Windows support
 - [ ] macOS support
-- [ ] Optional classification of screenshots (one-time codes, receipts, chats) with Jev, to find and clear out the throwaway ones. Opt-in and off by default; only the recognized text is sent, never the image
+- [x] Optional folder categorization with Jev, with a preview before creating category folders and moving files, and a local undo journal
 - [x] Typo-tolerant search for OCR misreads: look-alike characters (`0` and `O`, `rn` and `m`, `l` and `1`). Exact matches always rank first, and near matches are labelled as such, with the text exactly as it was read, so an error code is never silently "corrected"
 - [ ] Words the OCR split apart (`ord er` for `order`), without matching words that really are apart: joining them naively found "HOURS IN VOICE" for `invoice`
 - [x] Search by what a screenshot shows, not only its text, using local TinyCLIP embeddings alongside OCR
@@ -231,12 +231,21 @@ gyotaku runs entirely on your machine. It has no telemetry, accounts or update c
 - [ ] Screenshots that only ever go to the clipboard: an opt-in setting that saves images copied to the clipboard into a folder of their own, so they become searchable like any other screenshot. Works on Linux (Wayland and X11); the Windows side is written but not yet tried on a real machine
 - [x] Group bursts of near-identical screenshots into one tile, with the rest a key away
 - [x] Search filters for the folder (`in:discord`) and the date (`date:yesterday`, `before:aug`, `after:2026-08-01`)
+
 - [ ] An `app:` filter, which first needs a way to know which app a screenshot was taken in: the file itself doesn't say
 - [x] Devanagari (Hindi, Marathi, Nepali), opt-in in settings, and vertical text
 - [ ] More scripts: Cyrillic, Hangul, Arabic, Thai and the rest
 - [ ] Handwriting: measure how well neat and messy handwritten notes read, and add an optional handwriting pass if it's worth it
 
 Suggestions are welcome as [feature requests](https://github.com/xevrion/gyotaku/issues/new?template=feature_request.yml).
+
+### Organizing a folder
+
+Open **Categorize** from the search window and choose a folder. Only immediate files are considered; existing subfolders are left alone. Names-only mode sends filenames, not contents or absolute paths, to TypeSafe. Optional image mode uploads image previews for supported images; other files still use filenames. Image classification is experimental.
+
+Set `TYPESAFE_API_KEY` in the environment or a local `.env` file before analyzing. Do not commit the key. Review the proposed destination of every file before confirming **Organize**. The app creates category subfolders and moves classified files into them. Uncertain files, conflicts, and failed operations stay in place. Existing files are never overwritten.
+
+Use **Undo organization** for the selected folder to restore all files still recorded as organized in its local operation journal, including earlier runs. Files changed after organization or conflicting with an existing original location require manual review and are not overwritten. Keep the journal until the organization has been reviewed. Hidden files, incomplete downloads, links, and filenames suggesting credentials or private keys are excluded before any API call; this filter does not guarantee that other filenames are free of private information.
 
 ## Documentation
 

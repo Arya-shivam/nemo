@@ -1,3 +1,4 @@
+mod categorize;
 mod settings;
 
 use std::cell::RefCell;
@@ -172,6 +173,8 @@ pub struct Gyotaku {
     keep_top: Option<(i64, Pixels)>,
 
     page: Page,
+    /// Independent from navigation so cloud previews and local jobs survive it.
+    categorize: categorize::Categorize,
     /// Focus for settings and onboarding, so typing there doesn't land in
     /// the search field.
     panel_focus: FocusHandle,
@@ -242,6 +245,7 @@ struct Binned {
 enum Page {
     Search,
     Settings(Settings),
+    Categorize,
     Onboarding(Onboarding),
 }
 
@@ -343,6 +347,7 @@ impl Gyotaku {
             reveal_selected: false,
             keep_top: None,
             page: Page::Search,
+            categorize: categorize::Categorize::default(),
             panel_focus: cx.focus_handle(),
             theme_choice: config.theme,
             visible: true,
@@ -2033,6 +2038,20 @@ impl Gyotaku {
             .child(div().text_sm().text_color(theme.muted).child(count))
             .child(
                 div()
+                    .id("categorize-open")
+                    .px_2()
+                    .py_1()
+                    .rounded(px(8.))
+                    .text_sm()
+                    .cursor(CursorStyle::PointingHand)
+                    .hover(move |el| el.bg(theme.hover_wash))
+                    .on_click(cx.listener(|this, _: &ClickEvent, window, cx| {
+                        this.open_categorize(window, cx);
+                    }))
+                    .child(self.categorize_label()),
+            )
+            .child(
+                div()
                     .id("settings-hint")
                     .cursor(CursorStyle::PointingHand)
                     .on_click(cx.listener(|this, _: &ClickEvent, window, cx| {
@@ -2556,7 +2575,7 @@ impl Focusable for Gyotaku {
     fn focus_handle(&self, cx: &App) -> FocusHandle {
         match self.page {
             Page::Search => self.input.focus_handle(cx),
-            Page::Settings(_) | Page::Onboarding(_) => self.panel_focus.clone(),
+            Page::Settings(_) | Page::Onboarding(_) | Page::Categorize => self.panel_focus.clone(),
         }
     }
 }
@@ -2593,6 +2612,7 @@ impl Render for Gyotaku {
         let mut content: Vec<AnyElement> = match self.page {
             Page::Settings(_) => vec![self.render_settings(theme, window, cx)],
             Page::Onboarding(_) => vec![self.render_onboarding(theme, cx)],
+            Page::Categorize => vec![self.render_categorize(theme, cx)],
             Page::Search => {
                 let body: AnyElement = if self.hits.is_empty() {
                     self.render_empty(theme, cx).into_any_element()

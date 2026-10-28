@@ -5,6 +5,7 @@
 - [Visual search](#visual-search)
 - [Index and search](#index-and-search)
 - [Search window](#search-window)
+- [Folder categorization](#folder-categorization)
 - [Operating systems](#operating-systems)
 - [Repository layout](#repository-layout)
 
@@ -62,6 +63,14 @@ index and thumbnail cache through `crates/core`. Platform-specific watching,
 launching, hotkeys, and clipboard behavior are kept behind platform modules.
 
 gyotaku does not capture screenshots. It indexes the folders that existing screenshot tools write to. An existing backlog is indexed newest first, since recent screenshots are the most likely to be searched for.
+
+## Folder categorization
+
+Categorization is separate from OCR indexing and screenshot search. The GUI selects a folder and explicitly starts a background classification job. Core inventory and organization logic lives in `categorize`; the app owns presentation and job state.
+
+Names-only requests send the filename to the hosted TypeSafe API. Image mode additionally sends a prepared preview for supported images using the experimental images header. The API response is parsed into a fixed category vocabulary; model-generated text is never used directly as a destination path. A classification failure is not a negative answer.
+
+Classification produces a preview without changing files. Confirming organization creates category subfolders and moves files without overwriting existing entries. A persistent local journal supports recovery and undo. Existing subfolders are not scanned, and files that no longer match their preview are not moved.
 
 ## Text recognition
 

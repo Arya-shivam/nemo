@@ -230,6 +230,7 @@ impl Gyotaku {
         self.stop_recording(cx);
         match &mut self.page {
             Page::Search => {}
+            Page::Categorize => return self.categorize_key(key, window, cx),
             Page::Settings(s) => {
                 let rows = s.rows();
                 let row = rows.get(s.cursor).copied();
@@ -337,6 +338,7 @@ impl Gyotaku {
             // and the next summon lands here again.
             Page::Onboarding(_) => window.remove_window(),
             Page::Settings(_) => self.leave_panel(window, cx),
+            Page::Categorize => self.categorize_back(window, cx),
             Page::Search => {}
         }
     }
@@ -691,7 +693,7 @@ impl Gyotaku {
                 self.save(config, cx);
                 self.flash("added, the watcher starts reading it now", cx);
             }
-            Page::Search => {}
+            Page::Search | Page::Categorize => {}
         }
         cx.notify();
     }
@@ -700,7 +702,7 @@ impl Gyotaku {
         let cursor = match &mut self.page {
             Page::Settings(s) => &mut s.cursor,
             Page::Onboarding(o) => &mut o.cursor,
-            Page::Search => return,
+            Page::Search | Page::Categorize => return,
         };
         if *cursor != at {
             *cursor = at;
@@ -1025,7 +1027,27 @@ impl Gyotaku {
                     .border_b_1()
                     .border_color(theme.hairline)
                     .child(div().text_size(px(21.)).child("settings"))
-                    .child(hint("esc", "back", theme)),
+                    .child(
+                        div()
+                            .flex()
+                            .items_center()
+                            .gap_3()
+                            .child(
+                                div()
+                                    .id("settings-categorize")
+                                    .px_3()
+                                    .py_2()
+                                    .rounded(px(8.))
+                                    .text_sm()
+                                    .cursor(CursorStyle::PointingHand)
+                                    .hover(move |el| el.bg(theme.hover_wash))
+                                    .on_click(cx.listener(|this, _: &ClickEvent, window, cx| {
+                                        this.open_categorize(window, cx);
+                                    }))
+                                    .child(self.categorize_label()),
+                            )
+                            .child(hint("esc", "back", theme)),
+                    ),
             )
             .child(
                 div()

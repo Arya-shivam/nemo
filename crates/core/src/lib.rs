@@ -1,4 +1,5 @@
 pub mod burst;
+pub mod categorize;
 pub mod clipboard;
 mod config;
 mod index;
