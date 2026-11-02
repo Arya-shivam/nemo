@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gyotaku architecture guide</title>
+<style>
+:root{color-scheme:light;--paper:#f6f4ef;--card:#fffefa;--ink:#24221f;--muted:#625f59;--line:#d8d3ca;--shu:#cf493a;--blue:#315b76;--green:#466d57;--gold:#936d2d;--wash:#efebe3;--shadow:0 8px 26px #29251a0c}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.58 "IBM Plex Sans",Inter,Segoe UI,system-ui,sans-serif}a{color:#874135;text-underline-offset:3px}a:hover{color:var(--shu)}code,.mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.92em}code{background:#efede8;padding:.12em .32em;border-radius:4px;overflow-wrap:anywhere}.shell{max-width:1200px;margin:auto;padding:0 24px}.hero{padding:52px 0 26px;border-bottom:1px solid var(--line)}.eyebrow{text-transform:uppercase;letter-spacing:.13em;font-size:12px;font-weight:700;color:var(--shu)}h1{font-size:clamp(34px,5vw,58px);line-height:1.05;letter-spacing:-.045em;max-width:850px;margin:12px 0}.lede{max-width:760px;color:var(--muted);font-size:18px}.hero-note{margin-top:24px;padding:14px 18px;border-left:4px solid var(--shu);background:var(--card);max-width:900px}.nav{position:sticky;top:0;z-index:5;background:#f6f4efeF;border-bottom:1px solid var(--line);backdrop-filter:blur(12px)}.navinner{display:flex;gap:8px;overflow:auto;padding:10px 0;white-space:nowrap}.nav a{padding:7px 10px;border-radius:6px;color:var(--muted);text-decoration:none;font-size:13px}.nav a:hover{background:var(--wash);color:var(--ink)}main{padding:28px 0 80px}section{scroll-margin-top:70px;margin:26px 0 54px}h2{font-size:29px;line-height:1.15;letter-spacing:-.025em;margin:0 0 8px}h3{font-size:19px;line-height:1.25;margin:0 0 8px}p{margin:8px 0 14px}.section-intro{color:var(--muted);max-width:850px;margin-bottom:20px}.grid{display:grid;gap:16px}.grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}.grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;box-shadow:var(--shadow)}.card p:last-child{margin-bottom:0}.tag{display:inline-block;border:1px solid var(--line);border-radius:99px;padding:3px 9px;margin:2px 4px 2px 0;font-size:12px;color:var(--muted)}.owner{font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;color:var(--blue)}.flow{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;overflow:auto;box-shadow:var(--shadow)}svg{display:block;width:100%;min-width:780px;height:auto}.node rect{fill:#fffefa;stroke:#bdb6aa;stroke-width:1.5;rx:12}.node.reader rect{stroke:#c77a35}.node.ocr rect{stroke:#547a91}.node.core rect{stroke:#63826a}.node.store rect{stroke:#9b7844}.node.ui rect{stroke:#8d6a82}.node .title{font-size:16px;font-weight:700;fill:#24221f}.node .sub{font-size:12px;fill:#625f59}.edge{stroke:#81796d;stroke-width:2;fill:none;marker-end:url(#arrow)}.edge-label{font-size:11px;fill:#625f59}.legend{display:flex;gap:10px;flex-wrap:wrap;padding:8px 4px 0}.key{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}.dot{width:10px;height:10px;border-radius:50%}.step{display:grid;grid-template-columns:42px 1fr;gap:13px;padding:15px 0;border-top:1px solid var(--line)}.step:first-child{border-top:0}.num{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--ink);color:#fff;font-weight:700}.step h3{margin:2px 0 5px}.path{display:inline-block;margin-top:3px;font-size:13px;color:var(--blue)}.branch{border-left:3px solid var(--line);margin:10px 0 0 8px;padding:4px 0 4px 16px}.branch.exact{border-color:var(--green)}.branch.near{border-color:var(--shu)}table{border-collapse:collapse;width:100%;font-size:14px;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}th,td{text-align:left;vertical-align:top;padding:11px 13px;border-bottom:1px solid var(--line)}th{background:var(--wash);font-size:12px;text-transform:uppercase;letter-spacing:.07em}tr:last-child td{border-bottom:0}.callout{padding:14px 17px;border-radius:9px;background:#f3e7df;border:1px solid #e8c8bb}.muted{color:var(--muted)}details{background:var(--card);border:1px solid var(--line);border-radius:10px;margin:10px 0;overflow:hidden}summary{cursor:pointer;padding:13px 16px;font-weight:700}details[open] summary{border-bottom:1px solid var(--line)}.detail-body{padding:14px 17px}.detail-body ul{margin:8px 0;padding-left:20px}.detail-body li{margin:5px 0}.searchbox{display:flex;gap:8px;margin:15px 0}.searchbox input{font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);width:min(100%,440px)}.search-result{font-size:13px;color:var(--muted);align-self:center}.file-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.file{padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--card)}.file strong{display:block}.file p{font-size:13px;color:var(--muted);margin:5px 0 0}.footer{border-top:1px solid var(--line);padding:22px 0 38px;color:var(--muted);font-size:13px}.hide{display:none!important}@media(max-width:760px){.shell{padding:0 15px}.hero{padding-top:34px}.grid.two,.grid.three,.file-list{grid-template-columns:1fr}.navinner{gap:2px}.card{padding:15px}h2{font-size:25px}}
+</style>
+<style>
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.toolbar button,.flow-step{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:9px 12px;cursor:pointer}.toolbar button[aria-pressed="true"],.flow-step[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:white}.process-pane{display:none}.process-pane.active{display:block}.process-steps{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.process-detail{min-height:240px}.process-detail pre{white-space:pre-wrap;overflow:auto;background:#25231f;color:#f5f1e8;padding:14px;border-radius:8px;font-size:13px}.process-detail pre code{background:none;padding:0;color:inherit}.guide-search{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:18px 0}.guide-search input{font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);width:min(100%,460px)}.source-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.source-item{border:1px solid var(--line);border-radius:9px;background:var(--card);padding:13px}.source-item p{font-size:13px;color:var(--muted);margin:5px 0}.no-results{color:var(--muted)}@media(max-width:760px){.source-list{grid-template-columns:1fr}.process-detail{min-height:0}}
+</style>
+</head>
+<body>
+<header class="hero shell">
+  <div class="eyebrow">Gyotaku system guide</div>
+  <h1>How a screenshot becomes searchable</h1>
+  <p class="lede">Start with the two main jobs, then follow each one into the Rust crates and the functions that do the work.</p>
+  <div class="hero-note"><strong>The whole system in one sentence:</strong> the CLI reads screenshots and writes OCR text into a shared local index; the search window and CLI search that index.<p class="muted" style="margin:8px 0 0">This is one self-contained file. Diagrams and styles are embedded, with no network libraries.</p></div>
+</header>
+<nav class="nav"><div class="navinner shell">
+  <a href="#processes">Process explorer</a><a href="#overview">Big picture</a><a href="#ingest">Indexing</a><a href="#search">Search</a><a href="#data">Stored data</a><a href="#runtime">App lifecycle</a><a href="#boundaries">Platform code</a><a href="#map">Crate map</a><a href="#tour">Read the code</a>
+</div></nav>
+<main class="shell">
+<section id="processes">
+  <h2>Explore the processes</h2>
+  <p class="section-intro">Choose a process, then select each step to see its job, inputs, outputs, and the Rust code that implements it. Use this as a guided route from operating system events down to SQLite rows and pixels.</p>
+  <div class="toolbar" role="tablist" aria-label="Process flows">
+    <button type="button" role="tab" data-process-tab="watch" aria-pressed="true">Background reader</button>
+    <button type="button" role="tab" data-process-tab="ocr" aria-pressed="false">One screenshot</button>
+    <button type="button" role="tab" data-process-tab="search" aria-pressed="false">Search</button>
+    <button type="button" role="tab" data-process-tab="app" aria-pressed="false">Search window</button>
+  </div>
+  <div class="card process-pane active" data-process-pane="watch">
+    <div class="process-steps" role="group" aria-label="Background reader steps">
+      <button class="flow-step" data-step="watch-boot" aria-pressed="true">1. Start and lock</button><button class="flow-step" data-step="watch-events" aria-pressed="false">2. Watch folders</button><button class="flow-step" data-step="watch-settle" aria-pressed="false">3. Wait for quiet</button><button class="flow-step" data-step="watch-queue" aria-pressed="false">4. Prioritize work</button><button class="flow-step" data-step="watch-recover" aria-pressed="false">5. Recover and sync</button>
+    </div>
+    <div class="process-detail" data-step-pane="watch-boot"><h3>Start one reader process</h3><p><code>watch::run</code> takes an OS lock so two readers do not race to index the same files. It loads config, prepares OCR models, watches configured folders, scans existing images, and queues files whose path or modification time is not current in SQLite.</p><p><strong>Input:</strong> optional fixed folders and thread count, plus saved config. <strong>Output:</strong> a live <code>Watch</code> state and a backlog.</p><details><summary>Code: startup and backlog</summary><pre><code>let Some(_lock) = only_watcher()? else { return Ok(()) };
+let indexer = Indexer::new(threads_now, &amp;scripts_now)?;
+let mut backlog = indexer::scan(&amp;w.folders)
+    .into_iter()
+    .filter(|p| w.indexer.needs_reading(p))
+    .collect::&lt;VecDeque&lt;PathBuf&gt;&gt;();</code></pre></details><a href="crates/cli/src/watch.rs">watch.rs: run and only_watcher</a></div>
+    <div class="process-detail hide" data-step-pane="watch-events"><h3>Turn filesystem notifications into work</h3><p>The notification callback sends events to the loop. <code>Watch::on_event</code> handles image changes, directory arrivals and removals, renames, and requests for a full rescan. A rename can update the stored path without rerunning OCR because the pixels did not change.</p><p><strong>Input:</strong> OS filesystem events. <strong>Output:</strong> pending paths, rename state, arrived folders, or a rescan flag.</p><details><summary>Code: event handoff</summary><pre><code>let (tx, rx) = mpsc::channel();
+let mut watcher = notify::recommended_watcher(move |event| {
+    let _ = tx.send(event);
+})?;
+for dir in &amp;w.folders {
+    watch_folder(&amp;mut watcher, dir);
+}</code></pre></details><a href="crates/cli/src/watch.rs">watch.rs: watcher setup and Watch::on_event</a></div>
+    <div class="process-detail hide" data-step-pane="watch-settle"><h3>Wait until a screenshot is fully written</h3><p>Each changed path records the last event time. After <code>SETTLE</code> (400 ms) without a newer event, it is eligible for reading. If image decoding still fails within the 10-second write window, it is retried instead of recorded as unreadable.</p><p><strong>Why:</strong> capture tools often create or rewrite image files in multiple passes.</p><details><summary>Code: quiet period</summary><pre><code>let ready: Vec&lt;PathBuf&gt; = map.iter()
+    .filter(|(_, t)| now.duration_since(**t) &gt;= SETTLE)
+    .map(|(p, _)| p.clone())
+    .collect();</code></pre></details><a href="crates/cli/src/watch.rs">watch.rs: settled</a> | <a href="crates/cli/src/indexer.rs">indexer.rs: written_recently</a></div>
+    <div class="process-detail hide" data-step-pane="watch-queue"><h3>Read new captures before old backlog</h3><p>Newly settled screenshots jump ahead of the startup backlog, so a fresh capture becomes searchable while an older library is still being scanned. Existing files are processed newest first. On battery, backfill is paced; new events still wake the loop.</p><p><strong>Output:</strong> calls to <code>Indexer::index_file</code>, plus progress status.</p><details><summary>Code: fresh work has priority</summary><pre><code>let fresh = settled(&amp;mut w.pending);
+if !fresh.is_empty() {
+    for path in fresh {
+        if index(&amp;mut w.indexer, &amp;path) == Read::Again {
+            w.pending.insert(path, Instant::now());
+        }
+    }
+    continue;
+}</code></pre></details><a href="crates/cli/src/watch.rs">watch.rs: run loop</a></div>
+    <div class="process-detail hide" data-step-pane="watch-recover"><h3>Follow config changes and recover lost events</h3><p>When config changes, valid new settings update watched folders, clipboard tracking, OCR scripts, and thread count. Invalid partial edits are ignored until they parse. Watcher errors and queue overflow trigger a scan of configured folders, preventing a lost notification from permanently hiding a changed screenshot.</p><details><summary>Code: rescan decision</summary><pre><code>let look = if std::mem::take(&amp;mut w.rescan) {
+    w.arrived.clear();
+    w.folders.clone()
+} else {
+    std::mem::take(&amp;mut w.arrived)
+};</code></pre></details><a href="crates/cli/src/watch.rs">watch.rs: config reload and rescan</a></div>
+  </div>
+  <div class="card process-pane" data-process-pane="ocr">
+    <div class="process-steps" role="group" aria-label="One screenshot steps">
+      <button class="flow-step" data-step="ocr-gate" aria-pressed="true">1. Check file</button><button class="flow-step" data-step="ocr-decode" aria-pressed="false">2. Decode pixels</button><button class="flow-step" data-step="ocr-detect" aria-pressed="false">3. Find text regions</button><button class="flow-step" data-step="ocr-read" aria-pressed="false">4. Recognize lines</button><button class="flow-step" data-step="ocr-save" aria-pressed="false">5. Save records</button>
+    </div>
+    <div class="process-detail" data-step-pane="ocr-gate"><h3>Check whether OCR is necessary</h3><p><code>index_file</code> skips cloud-only files and checks the file modification time. If the same file is already indexed, it exits early. If just its thumbnail is missing, it recreates that preview without rereading text.</p><details><summary>Code: unchanged-file fast path</summary><pre><code>if self.index.is_current(path, mtime)? {
+    let thumb = gyotaku_core::thumb_path(path)?;
+    if !thumb.exists() &amp;&amp; self.index.is_visible(path)? {
+        write_thumbnail(&amp;gyotaku_ocr::load_image(path)?, &amp;thumb)?;
+        return Ok(Outcome::Thumbnail);
+    }
+    return Ok(Outcome::Unchanged);
+}</code></pre></details><a href="crates/cli/src/indexer.rs">indexer.rs: Indexer::index_file</a></div>
+    <div class="process-detail hide" data-step-pane="ocr-decode"><h3>Decode safely and classify failures</h3><p>The image loader turns the file into an RGB image. Very small images are hidden from results. A recent decode failure becomes <code>NotYet</code> so the watcher retries; an older invalid image is stored as hidden metadata, preventing repeat work.</p><p><strong>Input:</strong> image path. <strong>Output:</strong> RGB pixels or a retry/hidden outcome.</p><a href="crates/cli/src/indexer.rs">indexer.rs</a> | <a href="crates/ocr/src/lib.rs">ocr/lib.rs: load_image</a></div>
+    <div class="process-detail hide" data-step-pane="ocr-detect"><h3>Detect rectangles before reading text</h3><p><code>Ocr::new</code> loads ONNX Runtime and the detector and recognizer sessions once for the reader. For each image, <code>Ocr::read</code> asks the detector for text regions, then sends cropped regions to recognition.</p><p><strong>Input:</strong> RGB pixels and loaded model sessions. <strong>Output:</strong> candidate rectangles and recognized strings with confidence.</p><a href="crates/ocr/src/lib.rs">ocr/lib.rs: Ocr::new and Ocr::read</a> | <a href="crates/ocr/src/det.rs">det.rs</a></div>
+    <div class="process-detail hide" data-step-pane="ocr-read"><h3>Retry uncertain lines with enabled scripts</h3><p>Optional script recognizers reread only lines that look uncertain. Their result replaces the default read only when it is more confident and contains characters from that script. Gyotaku drops low-confidence and single-character results, then normalizes rectangle coordinates to image width and height.</p><details><summary>Code: normalize OCR boxes</summary><pre><code>rect: Rect {
+    x: r.x0 as f32 / w,
+    y: r.y0 as f32 / h,
+    w: r.width() as f32 / w,
+    h: r.height() as f32 / h,
+}</code></pre></details><a href="crates/ocr/src/lib.rs">ocr/lib.rs: Ocr::read</a> | <a href="crates/core/src/lib.rs">core/lib.rs: Line and Rect</a></div>
+    <div class="process-detail hide" data-step-pane="ocr-save"><h3>Write preview and searchable rows</h3><p>The indexer writes a small JPEG preview, builds a <code>Shot</code> with source path, mtime and dimensions, and calls <code>Index::insert</code>. Core replaces the prior row for that path and commits shot metadata, OCR lines, combined text, folded text, and burst information in one transaction.</p><details><summary>Code: one database transaction</summary><pre><code>let tx = self.write()?;
+delete(&amp;tx, path)?;
+// insert shot and line rows
+// insert combined exact and folded OCR text
+tx.commit()?;</code></pre></details><a href="crates/cli/src/indexer.rs">indexer.rs</a> | <a href="crates/core/src/index.rs">index.rs: Index::insert</a></div>
+  </div>
+  <div class="card process-pane" data-process-pane="search">
+    <div class="process-steps" role="group" aria-label="Search steps">
+      <button class="flow-step" data-step="search-parse" aria-pressed="true">1. Parse query</button><button class="flow-step" data-step="search-exact" aria-pressed="false">2. Exact candidates</button><button class="flow-step" data-step="search-near" aria-pressed="false">3. Near candidates</button><button class="flow-step" data-step="search-lines" aria-pressed="false">4. Get matching lines</button>
+    </div>
+    <div class="process-detail" data-step-pane="search-parse"><h3>Separate terms from filters</h3><p><code>Query::parse</code> converts input into search terms and filters such as <code>in:</code>, <code>date:</code>, <code>before:</code>, and <code>after:</code>. Terms are split into three-or-more-character terms and shorter terms because the trigram index cannot search very short text.</p><p><strong>Input:</strong> raw query text. <strong>Output:</strong> normalized terms and typed filters.</p><a href="crates/core/src/query.rs">query.rs: Query::parse</a></div>
+    <div class="process-detail hide" data-step-pane="search-exact"><h3>Search exact OCR text first</h3><p>Core builds a parameterized SQL query against <code>shots_fts</code>. FTS5 trigram matching handles longer terms; short terms use an escaped <code>LIKE</code> check. Every term must match, filters restrict paths or timestamps, and only visible screenshots are returned newest first.</p><details><summary>Code: exact results first</summary><pre><code>let mut hits = self.find_in(false, &amp;long, &amp;short,
+    filters, limit)?;</code></pre></details><a href="crates/core/src/index.rs">index.rs: find and find_in</a></div>
+    <div class="process-detail hide" data-step-pane="search-near"><h3>Use folded text only to find candidates</h3><p>If exact results leave room, core searches a folded version that merges selected OCR look-alikes such as <code>0</code> and <code>o</code>. Folding can produce false candidates, so core checks each against the original recognized text before returning it. Near hits always follow exact hits.</p><details><summary>Code: verify candidates against original text</summary><pre><code>if terms.iter().all(|t| reads_near(&amp;read, t, swaps(t))) {
+    hits.push(Hit { near: true, ..hit });
+}</code></pre></details><a href="crates/core/src/index.rs">index.rs: find</a></div>
+    <div class="process-detail hide" data-step-pane="search-lines"><h3>Return metadata, then load line boxes as needed</h3><p><code>Index::find</code> returns hit metadata without line text. CLI <code>Index::search</code> attaches matching lines before printing. The app fetches matched lines only for visible tiles, and each line's normalized rectangle becomes a box over the result image.</p><a href="crates/core/src/index.rs">index.rs: search and matching_lines</a> | <a href="crates/app/src/app.rs">app.rs: matched_lines</a></div>
+  </div>
+  <div class="card process-pane" data-process-pane="app">
+    <div class="process-steps" role="group" aria-label="Search window steps">
+      <button class="flow-step" data-step="app-start" aria-pressed="true">1. Start or wake</button><button class="flow-step" data-step="app-query">2. Query the index</button><button class="flow-step" data-step="app-stack">3. Group bursts</button><button class="flow-step" data-step="app-render">4. Render visible tiles</button><button class="flow-step" data-step="app-hide">5. Hide and release memory</button>
+    </div>
+    <div class="process-detail" data-step-pane="app-start"><h3>Run once or keep a resident process</h3><p>Without <code>--once</code>, a new launch first tries to wake an existing instance. If none answers, it starts a resident app and listens for later launch requests or summon events. <code>--background</code> starts without opening the window; <code>--once</code> exits when the window closes.</p><details><summary>Code: wake existing process</summary><pre><code>if !once &amp;&amp; platform::wake(&amp;address) {
+    return Ok(());
+}</code></pre></details><a href="crates/app/src/main.rs">app main: main and toggle</a></div>
+    <div class="process-detail hide" data-step-pane="app-query"><h3>Turn input into result metadata</h3><p>The app reads the query input, parses it to choose a search or browse limit, then calls <code>Index::find</code>. It stores returned hits and thumbnail paths, clears cached matched lines, and updates its current query state.</p><a href="crates/app/src/app.rs">app.rs: load_hits and search</a></div>
+    <div class="process-detail hide" data-step-pane="app-stack"><h3>Collapse related screenshots into bursts</h3><p>Near-identical screenshots are grouped so one tile can represent several captures. The app keeps the other hits behind that tile and can reveal them when the burst is unfolded.</p><a href="crates/app/src/app.rs">app.rs: stack and folded</a> | <a href="crates/core/src/burst.rs">burst.rs</a></div>
+    <div class="process-detail hide" data-step-pane="app-render"><h3>Load only what the visible grid needs</h3><p>Thumbnail decoding runs on GPUI's background executor. Matched lines are fetched only when a tile is shown and there is an active query. Rendering combines the image with match rectangles and selection state.</p><a href="crates/app/src/app.rs">app.rs: image, matched_lines, render_tile</a> | <a href="crates/app/src/images.rs">images.rs</a></div>
+    <div class="process-detail hide" data-step-pane="app-hide"><h3>Keep the process ready without keeping every image</h3><p>In resident mode, closing the window hides the view and releases image memory. A later launch or summon toggles the window back open. The background reader is revived during startup.</p><a href="crates/app/src/main.rs">app main: window close and revive_reader</a> | <a href="crates/app/src/platform/mod.rs">platform interface</a></div>
+  </div>
+  <div class="guide-search"><label for="source-search"><strong>Find a file or function</strong></label><input id="source-search" type="search" placeholder="Try Index::insert, watch.rs, OCR, or thumbnails" autocomplete="off"><span id="source-count" class="search-result" aria-live="polite"></span></div>
+  <div class="source-list" id="source-list">
+    <article class="source-item"><strong><a href="crates/cli/src/watch.rs">watch.rs: watch::run</a></strong><p>Reader startup, folder watches, settle timers, rescans, config reloads, fresh work priority, and backlog.</p></article>
+    <article class="source-item"><strong><a href="crates/cli/src/watch.rs">watch.rs: Watch::on_event</a></strong><p>Filesystem event routing for image writes, removals, arrivals, and split or paired renames.</p></article>
+    <article class="source-item"><strong><a href="crates/cli/src/indexer.rs">indexer.rs: Indexer::index_file</a></strong><p>mtime gate, cloud-only skip, image decode, retry/hidden outcomes, OCR, thumbnail, and database insert.</p></article>
+    <article class="source-item"><strong><a href="crates/ocr/src/lib.rs">ocr/lib.rs: Ocr::new and Ocr::read</a></strong><p>ONNX Runtime sessions, detector/recognizer orchestration, optional script rereads, confidence filter, normalized boxes.</p></article>
+    <article class="source-item"><strong><a href="crates/ocr/src/det.rs">ocr/det.rs: detect</a></strong><p>Resize and prepare RGB tensors, run text detection, and map regions back to original image coordinates.</p></article>
+    <article class="source-item"><strong><a href="crates/ocr/src/rec.rs">ocr/rec.rs: recognize</a></strong><p>Crop detected regions, run recognition, and handle uncertain or rotated text lines.</p></article>
+    <article class="source-item"><strong><a href="crates/core/src/index.rs">core/index.rs: Index::insert</a></strong><p>Transaction that replaces a screenshot row and writes OCR lines, full-text text, folded text, and burst data.</p></article>
+    <article class="source-item"><strong><a href="crates/core/src/index.rs">core/index.rs: Index::find</a></strong><p>Exact trigram search, short-term fallback, filters, and validated near-match candidates.</p></article>
+    <article class="source-item"><strong><a href="crates/core/src/query.rs">core/query.rs: Query::parse</a></strong><p>Splits free-text terms from folder and date filters.</p></article>
+    <article class="source-item"><strong><a href="crates/app/src/app.rs">app/app.rs: load_hits, image, matched_lines</a></strong><p>Query-to-hit state, lazy thumbnail decoding, and per-visible-tile highlight lookup.</p></article>
+    <article class="source-item"><strong><a href="crates/app/src/main.rs">app/main.rs: resident lifecycle</a></strong><p>Wake-or-start behavior, summon listener, window toggle, and memory release when hidden.</p></article>
+    <article class="source-item"><strong><a href="crates/core/src/burst.rs">core/burst.rs: similar screenshots</a></strong><p>Image/text likeness and grouping into bursts represented by one result tile.</p></article>
+  </div>
+  <p id="source-empty" class="no-results hide">No matching source entries.</p>
+</section>
+<section id="overview">
+  <h2>Big picture</h2>
+  <p class="section-intro">Gyotaku has a reader and a search app. They are separate processes. They share data through the local index and thumbnail cache.</p>
+  <div class="flow">
+    <svg viewBox="0 0 1160 190" role="img" aria-labelledby="system-title system-desc">
+      <title id="system-title">Gyotaku indexing architecture</title><desc id="system-desc">Screenshot files pass through the CLI reader, OCR, core indexing, and SQLite. The reader also writes a thumbnail cache.</desc>
+      <defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#81796d"/></marker></defs>
+      <path class="edge" d="M190 70 H238"/><path class="edge" d="M430 70 H477"/><path class="edge" d="M662 70 H710"/><path class="edge" d="M895 70 H943"/>
+      <path class="edge" d="M333 105 V151 H482"/>
+      <text class="edge-label" x="198" y="58">image file</text><text class="edge-label" x="438" y="58">pixels</text><text class="edge-label" x="670" y="58">lines + boxes</text><text class="edge-label" x="900" y="58">write</text><text class="edge-label" x="340" y="143">preview</text>
+      <g class="node" transform="translate(20 36)"><rect width="170" height="68"/><text class="title" x="14" y="27">Screenshot folders</text><text class="sub" x="14" y="48">existing image files</text></g>
+      <g class="node reader" transform="translate(240 36)"><rect width="190" height="68"/><text class="title" x="14" y="27">CLI reader</text><text class="sub" x="14" y="48">scan, watch, skip unchanged</text></g>
+      <g class="node ocr" transform="translate(478 36)"><rect width="184" height="68"/><text class="title" x="14" y="27">OCR engine</text><text class="sub" x="14" y="48">detect regions, read lines</text></g>
+      <g class="node core" transform="translate(710 36)"><rect width="185" height="68"/><text class="title" x="14" y="27">Core index</text><text class="sub" x="14" y="48">Index::insert and shared rules</text></g>
+      <g class="node store" transform="translate(943 36)"><rect width="195" height="68"/><text class="title" x="14" y="27">SQLite index</text><text class="sub" x="14" y="48">text, paths, line positions</text></g>
+      <g class="node store" transform="translate(482 151)"><rect width="196" height="38"/><text class="title" x="14" y="25">Thumbnail cache</text></g>
+    </svg>
+    <div class="legend"><span class="key"><i class="dot" style="background:#c77a35"></i>CLI reader</span><span class="key"><i class="dot" style="background:#547a91"></i>OCR</span><span class="key"><i class="dot" style="background:#63826a"></i>shared core and storage</span><span class="key"><i class="dot" style="background:#8d6a82"></i>search interfaces</span></div>
+  </div>
+  <p class="callout" style="margin-top:14px"><strong>Search uses the same storage:</strong> <code>gyotaku search</code> and <code>gyotaku-app</code> send queries through <code>crates/core</code> to this SQLite index. The app also reads previews from the thumbnail cache.</p>
+  <div class="grid two" style="margin-top:16px">
+    <article class="card"><div class="owner">Background work</div><h3><code>gyotaku</code></h3><p>Indexes configured folders, watches for new files, and provides command-line search. It can run without a display.</p></article>
+    <article class="card"><div class="owner">Interactive work</div><h3><code>gyotaku-app</code></h3><p>Owns the GPUI window, query input, result grid, selection, and settings. It opens the same index that the reader updates.</p></article>
+  </div>
+</section>
+<section id="ingest">
+  <h2>Indexing: from file to OCR rows</h2>
+  <p class="section-intro">The CLI owns file discovery and indexing. OCR only sees image pixels. Core only sees screenshot metadata and recognized lines. The OCR crate runs PP-OCRv6 models through ONNX Runtime on the CPU.</p>
+  <div class="flow">
+    <svg viewBox="0 0 1080 150" role="img" aria-label="Indexing stages">
+      <defs><marker id="arrow2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#81796d"/></marker></defs>
+      <path class="edge" marker-end="url(#arrow2)" d="M182 68 H220"/><path class="edge" marker-end="url(#arrow2)" d="M395 68 H433"/><path class="edge" marker-end="url(#arrow2)" d="M608 68 H646"/><path class="edge" marker-end="url(#arrow2)" d="M821 68 H859"/>
+      <g class="node" transform="translate(8 34)"><rect width="174" height="68"/><text class="title" x="13" y="27">Find changed file</text><text class="sub" x="13" y="48">mtime + index lookup</text></g>
+      <g class="node reader" transform="translate(220 34)"><rect width="175" height="68"/><text class="title" x="13" y="27">Decode image</text><text class="sub" x="13" y="48">bounded image loading</text></g>
+      <g class="node ocr" transform="translate(433 34)"><rect width="175" height="68"/><text class="title" x="13" y="27">Recognize text</text><text class="sub" x="13" y="48">regions, lines, confidence</text></g>
+      <g class="node reader" transform="translate(646 34)"><rect width="175" height="68"/><text class="title" x="13" y="27">Make thumbnail</text><text class="sub" x="13" y="48">write to cache</text></g>
+      <g class="node core" transform="translate(859 34)"><rect width="205" height="68"/><text class="title" x="13" y="27">Insert into index</text><text class="sub" x="13" y="48">shot + lines + FTS text</text></g>
+    </svg>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <div class="step"><div class="num">1</div><div><h3>Choose files to read</h3><p><code>gyotaku index</code> scans configured folders once. <code>gyotaku watch</code> keeps watching them. The watcher waits for a file to settle before reading it, because screenshot tools may still be writing it.</p><a class="path" href="crates/cli/src/main.rs">crates/cli/src/main.rs, command dispatch</a> | <a class="path" href="crates/cli/src/watch.rs">crates/cli/src/watch.rs, run</a></div></div>
+    <div class="step"><div class="num">2</div><div><h3>Skip work that is already current</h3><p><code>Indexer::index_file</code> checks the file modification time against the index. If only the thumbnail is missing, it rebuilds that thumbnail without rerunning OCR.</p><a class="path" href="crates/cli/src/indexer.rs">crates/cli/src/indexer.rs, index_file</a></div></div>
+    <div class="step"><div class="num">3</div><div><h3>Decode and read the image</h3><p><code>gyotaku_ocr::load_image</code> decodes the file. <code>Ocr::read</code> calls the detector, then the recognizer. Optional script models reread lines the default recognizer was unsure about.</p><a class="path" href="crates/ocr/src/lib.rs">crates/ocr/src/lib.rs, Ocr::new and Ocr::read</a></div></div>
+    <div class="step"><div class="num">4</div><div><h3>Keep text with its position</h3><p>Each <code>Line</code> stores recognized text, a normalized rectangle, and a confidence score. Normalized coordinates let the app draw the same match box on a thumbnail or a full-size image.</p><a class="path" href="crates/core/src/lib.rs">crates/core/src/lib.rs, Line and Rect</a></div></div>
+    <div class="step"><div class="num">5</div><div><h3>Write searchable data</h3><p>The CLI makes a thumbnail and a <code>Shot</code>, then calls <code>Index::insert</code> with the shot and its lines. Core updates the SQLite rows and full-text indexes.</p><a class="path" href="crates/core/src/index.rs">crates/core/src/index.rs, Index::insert</a></div></div>
+  </div>
+  <p class="callout"><strong>Safety boundary:</strong> screenshots are read-only inputs. Gyotaku writes index data and thumbnails in its own data and cache directories.</p>
+</section>
+<section id="search">
+  <h2>Search: from keystroke to result</h2>
+  <p class="section-intro">The CLI and app share the same search code. The app asks for result metadata first and loads matched lines only for visible tiles.</p>
+  <div class="flow">
+    <svg viewBox="0 0 1100 170" role="img" aria-label="Search stages">
+      <defs><marker id="arrow3" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#81796d"/></marker></defs>
+      <path class="edge" marker-end="url(#arrow3)" d="M180 70 H218"/><path class="edge" marker-end="url(#arrow3)" d="M390 70 H428"/><path class="edge" marker-end="url(#arrow3)" d="M602 70 H640"/><path class="edge" marker-end="url(#arrow3)" d="M814 70 H852"/>
+      <g class="node ui" transform="translate(8 35)"><rect width="172" height="70"/><text class="title" x="13" y="28">User query</text><text class="sub" x="13" y="50">"invoice in:mail"</text></g>
+      <g class="node core" transform="translate(218 35)"><rect width="172" height="70"/><text class="title" x="13" y="28">Query::parse</text><text class="sub" x="13" y="50">terms + filters</text></g>
+      <g class="node core" transform="translate(428 35)"><rect width="174" height="70"/><text class="title" x="13" y="28">Index::find</text><text class="sub" x="13" y="50">SQL + FTS5</text></g>
+      <g class="node store" transform="translate(640 35)"><rect width="174" height="70"/><text class="title" x="13" y="28">Hit records</text><text class="sub" x="13" y="50">path, date, size, burst</text></g>
+      <g class="node ui" transform="translate(852 35)"><rect width="235" height="70"/><text class="title" x="13" y="28">CLI output or GPUI grid</text><text class="sub" x="13" y="50">lines and thumbnails on demand</text></g>
+    </svg>
+  </div>
+  <div class="grid two" style="margin-top:16px">
+    <article class="card"><div class="owner" style="color:var(--green)">Exact matches</div><h3>Find what OCR read</h3><p>SQLite FTS5 uses trigram indexing, so a substring can match inside a longer word. Every query term must appear in the screenshot text. Path and date filters narrow the same search.</p></article>
+    <article class="card"><div class="owner" style="color:var(--shu)">Near matches</div><h3>Recover likely OCR mistakes</h3><p>If exact results do not fill the limit, core folds common look-alikes such as <code>0</code> and <code>o</code>. It checks candidates against the original OCR text and puts near matches after exact matches.</p></article>
+  </div>
+  <details><summary>How do short terms and OCR mistakes work?</summary><div class="detail-body"><ul><li>Core sends terms of three or more characters to SQLite FTS5 with the trigram tokenizer.</li><li>Shorter terms use a <code>LIKE</code> fallback, after longer terms narrow the candidate rows.</li><li>Exact matches fill the result list first. Core tries folded near matches only when exact results leave room.</li><li>Folding narrows candidates. Core checks each one against the original OCR text to avoid false matches such as finding "email" inside "internally".</li><li><code>in:</code>, <code>date:</code>, <code>before:</code>, and <code>after:</code> filters apply to both exact and near searches.</li></ul><a href="crates/core/src/query.rs">Query parsing</a> | <a href="crates/core/src/index.rs">FTS and candidate checks</a></div></details>
+  <details><summary>What happens inside the app?</summary><div class="detail-body"><ul><li><code>Gyotaku::load_hits</code> parses the query and calls <code>Index::find</code>.</li><li><code>Gyotaku::stack</code> collapses screenshots that share a burst.</li><li><code>matched_lines</code> fetches text boxes for visible results when the query is active.</li><li><code>image</code> decodes visible thumbnails on a background executor.</li><li><code>render_tile</code> draws the image and match boxes in the grid.</li></ul><a href="crates/app/src/app.rs">Open crates/app/src/app.rs</a></div></details>
+  <details><summary>What happens in CLI search?</summary><div class="detail-body"><p>The CLI calls <code>Index::search</code>, which calls <code>find</code> and attaches matching lines to each hit. It prints the screenshot path, near-match marker when relevant, and matching text.</p><a href="crates/cli/src/main.rs">Open crates/cli/src/main.rs</a> | <a href="crates/core/src/index.rs">Open crates/core/src/index.rs</a></div></details>
+</section>
+<section id="data">
+  <h2>What the index stores</h2>
+  <p class="section-intro">Core keeps search data in SQLite and thumbnails in a separate cache. It stores line boxes so the app can point to the exact text that matched.</p>
+  <table><thead><tr><th>Store</th><th>Contains</th><th>Why it exists</th></tr></thead><tbody>
+    <tr><td><code>shots</code></td><td>Path, modification time, image dimensions, optional thumbnail difference hash, burst id</td><td>One row per screenshot. It also tells the reader whether OCR needs to run again.</td></tr>
+    <tr><td><code>lines</code></td><td>Text, normalized x/y/width/height, OCR score, screenshot id</td><td>Supports exact line highlighting and per-screenshot text display.</td></tr>
+    <tr><td><code>shots_fts</code></td><td>All OCR text for one screenshot</td><td>One full-text row per screenshot allows query terms to match across different lines.</td></tr>
+    <tr><td><code>shots_near</code></td><td>OCR text with selected look-alike characters folded</td><td>Finds likely OCR mistakes after exact matches have been collected.</td></tr>
+    <tr><td>Thumbnail cache</td><td>Small JPEG previews named from the original path</td><td>The result grid can scroll without decoding full screenshots on every frame.</td></tr>
+  </tbody></table>
+  <p style="margin-top:14px">The database uses write-ahead logging so the watcher can write while the app reads. Schema versions let core migrate stored OCR text when it can, instead of forcing a full reread. The schema lives in <a href="crates/core/src/index.rs">crates/core/src/index.rs</a>; shared value types live in <a href="crates/core/src/lib.rs">crates/core/src/lib.rs</a>.</p>
+  <details><summary>Why does the app ask for visible lines separately?</summary><div class="detail-body"><p>A broad query can match many screenshots. The app first asks for hit metadata, then reads matched lines only for visible tiles. It also decodes thumbnails on a background executor. That keeps scrolling and typing from loading every full-size image or every matched line at once.</p><a href="crates/app/src/app.rs">See load_hits, matched_lines, and image</a></div></details>
+</section>
+<section id="runtime">
+  <h2>How the app stays ready</h2>
+  <p class="section-intro">The UI process can stay resident while its window is hidden. A later launch or platform hotkey wakes it and toggles the window.</p>
+  <div class="grid three">
+    <article class="card"><div class="owner">Start</div><h3>Check for a resident process</h3><p><code>crates/app/src/main.rs</code> asks the platform module to wake an existing app. If one answers, this new process exits.</p></article>
+    <article class="card"><div class="owner">Prepare</div><h3>Load shared state</h3><p>The app loads configuration, binds keys, opens the default <code>Index</code>, creates the GPUI view, and revives the background reader. Use <code>--once</code> when running from source if you want the process to exit when the window closes.</p></article>
+    <article class="card"><div class="owner">Stay ready</div><h3>Hide the window, keep the process</h3><p>When the window closes in resident mode, the view is kept for next time and image memory is released. A later summon reopens it.</p></article>
+  </div>
+  <p class="path"><a href="crates/app/src/main.rs">Trace main, toggle, summon, root, and revive_reader in app/src/main.rs</a></p>
+</section>
+<section id="boundaries">
+  <h2>Where operating-system differences live</h2>
+  <p class="section-intro">Shared code calls a platform interface. Linux and Windows implement that interface in separate files.</p>
+  <table><thead><tr><th>Area</th><th>Shared interface</th><th>Linux and Windows implementations</th><th>Examples</th></tr></thead><tbody>
+    <tr><td>Search app</td><td><code>crates/app/src/platform/mod.rs</code></td><td><code>linux.rs</code>, <code>windows.rs</code></td><td>Launcher window, resident wake, hotkey, clipboard, reader startup</td></tr>
+    <tr><td>CLI reader</td><td><code>crates/cli/src/platform/mod.rs</code></td><td><code>linux.rs</code>, <code>windows.rs</code></td><td>Idle priority, battery state, folder and clipboard watching</td></tr>
+    <tr><td>Trash</td><td><code>crates/core/src/trash/mod.rs</code></td><td><code>freedesktop.rs</code>, <code>recycle_bin.rs</code></td><td>Undoable move to the system trash</td></tr>
+  </tbody></table>
+  <p class="callout" style="margin-top:16px">When a behavior differs by operating system, find the platform function before adding a conditional to shared code.</p>
+</section>
+<section id="map">
+  <h2>What each crate owns</h2>
+  <p class="section-intro">Use this map when you know the feature but not the file. The Rust workspace has four crates; the website and release files support the product but do not run inside the desktop app.</p>
+  <div class="file-list">
+    <article class="file"><strong><code>crates/core</code> | shared rules and persistence</strong><p><code>index.rs</code> SQLite schema and search; <code>query.rs</code> terms and filters; <code>burst.rs</code> similar-shot grouping; <code>config.rs</code> settings and paths; <code>lib.rs</code> shared data types.</p></article>
+    <article class="file"><strong><code>crates/ocr</code> | image to text</strong><p><code>det.rs</code> finds text regions; <code>rec.rs</code> reads lines; <code>models.rs</code> downloads and locates model/runtime files; <code>lib.rs</code> coordinates OCR.</p></article>
+    <article class="file"><strong><code>crates/cli</code> | commands and background reader</strong><p><code>main.rs</code> dispatches commands; <code>indexer.rs</code> processes one image; <code>watch.rs</code> observes folders and settings; <code>clipboard.rs</code> hands copied images to the reader.</p></article>
+    <article class="file"><strong><code>crates/app</code> | search window</strong><p><code>app.rs</code> owns view state and rendering; <code>input.rs</code> handles query editing; <code>grid.rs</code> lays out result tiles; <code>images.rs</code> decodes thumbnails; <code>keys.rs</code>, <code>theme.rs</code>, and <code>setup.rs</code> handle supporting UI behavior.</p></article>
+    <article class="file"><strong><code>site/</code> | product website</strong><p>A separate Next.js site for product information and installation instructions. It is not part of the Rust app runtime.</p></article>
+    <article class="file"><strong><code>packaging/</code> and installers</strong><p>Linux packages, Windows and Linux installers, desktop integration, and release resources.</p></article>
+    <article class="file"><strong><code>.github/workflows/</code></strong><p>CI builds and checks supported systems. Windows UI screenshots are captured in CI.</p></article>
+    <article class="file"><strong><code>tests/fixtures/</code> and <code>docs/</code></strong><p>Test images and the written architecture, usage, compatibility, performance, and troubleshooting guides.</p></article>
+  </div>
+</section>
+<section id="tour">
+  <h2>Read the code in this order</h2>
+  <p class="section-intro">Follow one screenshot through the system. Each file below answers the next question.</p>
+  <div class="card">
+    <div class="step"><div class="num">1</div><div><h3>What commands can start the flow?</h3><p>Read the CLI command enum and dispatch.</p><a class="path" href="crates/cli/src/main.rs">crates/cli/src/main.rs</a></div></div>
+    <div class="step"><div class="num">2</div><div><h3>How does one image get indexed?</h3><p>Read <code>Indexer::index_file</code> and the watch loop that calls it.</p><a class="path" href="crates/cli/src/indexer.rs">crates/cli/src/indexer.rs</a> | <a class="path" href="crates/cli/src/watch.rs">crates/cli/src/watch.rs</a></div></div>
+    <div class="step"><div class="num">3</div><div><h3>How does OCR produce searchable lines?</h3><p>Start at <code>Ocr::read</code>, then follow detector and recognizer calls.</p><a class="path" href="crates/ocr/src/lib.rs">crates/ocr/src/lib.rs</a> | <a class="path" href="crates/ocr/src/det.rs">det.rs</a> | <a class="path" href="crates/ocr/src/rec.rs">rec.rs</a></div></div>
+    <div class="step"><div class="num">4</div><div><h3>How does data enter SQLite?</h3><p>Follow <code>Shot</code>, <code>Line</code>, and <code>Index::insert</code>.</p><a class="path" href="crates/core/src/lib.rs">crates/core/src/lib.rs</a> | <a class="path" href="crates/core/src/index.rs">crates/core/src/index.rs</a></div></div>
+    <div class="step"><div class="num">5</div><div><h3>How does a query become hits?</h3><p>Read <code>Query::parse</code>, then <code>Index::find</code> and its exact and near-match branches.</p><a class="path" href="crates/core/src/query.rs">crates/core/src/query.rs</a> | <a class="path" href="crates/core/src/index.rs">crates/core/src/index.rs</a></div></div>
+    <div class="step"><div class="num">6</div><div><h3>How does the app show a hit?</h3><p>Read <code>load_hits</code>, <code>matched_lines</code>, <code>image</code>, and <code>render_tile</code>.</p><a class="path" href="crates/app/src/app.rs">crates/app/src/app.rs</a> | <a class="path" href="crates/app/src/main.rs">crates/app/src/main.rs</a></div></div>
+  </div>
+  <details><summary>Where to read the written explanation</summary><div class="detail-body"><p><a href="README.md">README</a> explains the product. <a href="docs/architecture.md">Architecture</a> explains OCR, indexing, search, and platform boundaries. <a href="docs/usage.md">Usage</a>, <a href="docs/compatibility.md">compatibility</a>, and <a href="docs/troubleshooting.md">troubleshooting</a> cover user-facing behavior. <a href="notes.md">Development notes</a> explain experiments and design decisions.</p></div></details>
+</section>
+</main>
+<footer class="footer"><div class="shell">This guide describes source ownership and data flow. For current behavior, follow the linked code.</div></footer>
+<script>
+const processTabs=[...document.querySelectorAll('[data-process-tab]')];
+const processPanes=[...document.querySelectorAll('[data-process-pane]')];
+function showProcess(name){
+  processTabs.forEach(tab=>tab.setAttribute('aria-pressed',String(tab.dataset.processTab===name)));
+  processPanes.forEach(pane=>{const active=pane.dataset.processPane===name;pane.classList.toggle('active',active);if(active){const first=pane.querySelector('[data-step]');if(first)showStep(pane,first.dataset.step)}});
+}
+function showStep(pane,name){
+  pane.querySelectorAll('[data-step]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.step===name)));
+  pane.querySelectorAll('[data-step-pane]').forEach(detail=>detail.classList.toggle('hide',detail.dataset.stepPane!==name));
+}
+processTabs.forEach(tab=>tab.addEventListener('click',()=>showProcess(tab.dataset.processTab)));
+processPanes.forEach(pane=>pane.querySelectorAll('[data-step]').forEach(button=>button.addEventListener('click',()=>showStep(pane,button.dataset.step))));
+const sourceSearch=document.querySelector('#source-search');
+const sourceItems=[...document.querySelectorAll('.source-item')];
+sourceSearch.addEventListener('input',()=>{
+  const query=sourceSearch.value.trim().toLowerCase();let shown=0;
+  sourceItems.forEach(item=>{const match=item.textContent.toLowerCase().includes(query);item.classList.toggle('hide',!match);if(match)shown++});
+  document.querySelector('#source-count').textContent=`${shown} of ${sourceItems.length} source entries`;
+  document.querySelector('#source-empty').classList.toggle('hide',shown!==0);
+});
+document.querySelector('#source-count').textContent=`${sourceItems.length} source entries`;
+</script>
+</body>
+</html>
