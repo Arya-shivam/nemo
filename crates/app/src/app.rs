@@ -2612,7 +2612,7 @@ impl Render for Gyotaku {
         let mut content: Vec<AnyElement> = match self.page {
             Page::Settings(_) => vec![self.render_settings(theme, window, cx)],
             Page::Onboarding(_) => vec![self.render_onboarding(theme, cx)],
-            Page::Categorize => vec![self.render_categorize(theme, cx)],
+            Page::Categorize => vec![self.render_categorize(theme, window, cx)],
             Page::Search => {
                 let body: AnyElement = if self.hits.is_empty() {
                     self.render_empty(theme, cx).into_any_element()
@@ -2650,7 +2650,7 @@ impl Render for Gyotaku {
         });
 
         let root = div()
-            .key_context("Gyotaku")
+            .key_context("Nemo")
             .on_action(cx.listener(Self::back))
             .on_action(cx.listener(Self::open))
             .on_action(cx.listener(Self::up))

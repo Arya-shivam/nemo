@@ -8,8 +8,8 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use gpui::{
-    AnyElement, ClickEvent, Context, CursorStyle, ListAlignment, ListState, PathPromptOptions,
-    SharedString, Window, div, list, prelude::*, px,
+    AnyElement, ClickEvent, Context, CursorStyle, FontWeight, ListAlignment, ListState,
+    PathPromptOptions, SharedString, Window, div, list, prelude::*, px, relative,
 };
 use gyotaku_core::categorize::{self, Category, Evidence, Preview};
 
@@ -389,22 +389,55 @@ impl Gyotaku {
         cx: &mut Context<Self>,
     ) -> AnyElement {
         let label: SharedString = label.into();
+        let selected = matches!(at, 1 | 2) && self.categorize.images == (at == 2);
+        let primary = enabled
+            && (at == 4
+                || at == 7
+                || (at == 0 && self.categorize.folder.is_none())
+                || (at == 3 && self.categorize.job.is_none() && self.categorize.preview.is_none()));
+        let background = if primary {
+            theme.text
+        } else if selected {
+            theme.panel
+        } else {
+            theme.keycap
+        };
         div()
             .id(("categorize-control", at))
-            .px_3()
-            .py_2()
-            .rounded(px(8.))
-            .text_sm()
+            .h(px(36.))
+            .px_4()
+            .flex_none()
+            .flex()
+            .items_center()
+            .justify_center()
+            .rounded(px(18.))
+            .text_size(px(14.))
+            .font_weight(FontWeight::MEDIUM)
+            .bg(background)
             .border_1()
-            .border_color(if self.categorize.cursor == at {
+            .border_color(if self.categorize.cursor == at || selected {
                 theme.muted
+            } else if primary {
+                theme.text
             } else {
                 theme.hairline
             })
-            .text_color(if enabled { theme.text } else { theme.muted })
+            .text_color(if primary {
+                theme.panel
+            } else if enabled {
+                theme.text
+            } else {
+                theme.muted
+            })
             .when(enabled, |el| {
                 el.cursor(CursorStyle::PointingHand)
-                    .hover(move |el| el.bg(theme.hover_wash))
+                    .hover(move |el| {
+                        if primary {
+                            el.border_color(theme.muted)
+                        } else {
+                            el.bg(theme.hover_wash)
+                        }
+                    })
                     .on_click(cx.listener(move |this, _: &ClickEvent, window, cx| {
                         this.categorize_activate(at, window, cx);
                     }))
@@ -439,7 +472,7 @@ impl Gyotaku {
     fn render_categorize_rows(
         &mut self,
         i: usize,
-        _: &mut Window,
+        window: &mut Window,
         cx: &mut Context<Self>,
     ) -> AnyElement {
         let theme = *cx.global::<Theme>();
@@ -459,200 +492,599 @@ impl Gyotaku {
         let can_toggle = (entry.category.is_some() || skipped)
             && entry.error.is_none()
             && self.categorize.confirmation.is_none();
+        let compact = window.viewport_size().width < px(760.);
+        let narrow = window.viewport_size().width < px(560.);
         let destination = match (entry.category, &entry.error) {
-            (_, Some(error)) => format!("Unchanged: {error}"),
-            (None, None) if skipped => "Unchanged: skipped by you".into(),
-            (Some(category), None) => {
-                format!("{}: {} / {name}", category.label(), category.folder_name())
-            }
-            (None, None) => "Unchanged: no confident category".into(),
+            (_, Some(_)) => "Stays here: needs attention",
+            (None, None) if skipped => "Stays here: skipped by you",
+            (Some(category), None) => category.folder_name(),
+            (None, None) => "Stays here: no confident category",
         };
+        let extension = entry
+            .source
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .unwrap_or("file")
+            .to_ascii_uppercase();
+        // The source and destination share the available width; the trailing
+        // 84px action column stays aligned with the table heading.
         div()
+            .w_full()
             .px_6()
-            .py_2()
+            .py_3()
             .border_b_1()
             .border_color(theme.hairline)
-            .flex()
-            .items_center()
-            .gap_3()
             .when(
                 self.categorize.confirmation.is_none() && self.categorize.cursor == i + 6,
                 |el| el.bg(theme.hover_wash),
             )
             .child(
                 div()
-                    .flex_1()
-                    .min_w(px(0.))
-                    .child(div().text_sm().text_ellipsis().child(name))
-                    .child(div().text_xs().text_color(theme.muted).child(destination)),
+                    .w_full()
+                    .flex()
+                    .items_center()
+                    .gap_4()
+                    .child(
+                        div()
+                            .flex_1()
+                            .min_w(px(0.))
+                            .flex()
+                            .items_center()
+                            .gap_3()
+                            .when(!narrow, |el| {
+                                el.child(
+                                    div()
+                                        .w(px(46.))
+                                        .flex_none()
+                                        .text_size(px(11.))
+                                        .text_color(theme.muted)
+                                        .text_ellipsis()
+                                        .child(extension),
+                                )
+                            })
+                            .child(
+                                div()
+                                    .flex_1()
+                                    .min_w(px(0.))
+                                    .child(div().text_size(px(14.)).text_ellipsis().child(name))
+                                    .when(compact, |el| {
+                                        el.child(
+                                            div()
+                                                .mt_1()
+                                                .text_size(px(12.))
+                                                .text_color(theme.muted)
+                                                .text_ellipsis()
+                                                .child(destination),
+                                        )
+                                    }),
+                            ),
+                    )
+                    .when(!compact, |el| {
+                        el.child(
+                            div()
+                                .w(relative(0.34))
+                                .min_w(px(0.))
+                                .text_size(px(14.))
+                                .text_color(if entry.category.is_some() {
+                                    theme.text
+                                } else {
+                                    theme.muted
+                                })
+                                .text_ellipsis()
+                                .child(destination),
+                        )
+                    })
+                    .child(div().w(px(84.)).flex_none().flex().justify_end().when(
+                        can_toggle,
+                        |el| {
+                            el.child(
+                                div()
+                                    .id(("categorize-skip", i))
+                                    .h(px(36.))
+                                    .px_3()
+                                    .rounded(px(18.))
+                                    .flex()
+                                    .items_center()
+                                    .text_size(px(13.))
+                                    .cursor(CursorStyle::PointingHand)
+                                    .hover(move |el| el.bg(theme.keycap))
+                                    .on_click(cx.listener(move |this, _: &ClickEvent, _, cx| {
+                                        this.categorize_toggle_file(i, cx)
+                                    }))
+                                    .child(if skipped { "Include" } else { "Skip" }),
+                            )
+                        },
+                    )),
             )
-            .when(can_toggle, |el| {
+            .when_some(entry.error.as_ref(), |el, error| {
                 el.child(
                     div()
-                        .id(("categorize-skip", i))
-                        .px_3()
-                        .py_2()
-                        .rounded(px(8.))
-                        .text_sm()
-                        .cursor(CursorStyle::PointingHand)
-                        .hover(move |el| el.bg(theme.hover_wash))
-                        .on_click(cx.listener(move |this, _: &ClickEvent, _, cx| {
-                            this.categorize_toggle_file(i, cx)
-                        }))
-                        .child(if skipped { "Include" } else { "Skip" }),
+                        .mt_2()
+                        .text_size(px(12.))
+                        .text_color(theme.muted)
+                        .child(error.clone()),
                 )
             })
             .into_any_element()
     }
 
-    pub(super) fn render_categorize(&mut self, theme: Theme, cx: &mut Context<Self>) -> AnyElement {
+    pub(super) fn render_categorize(
+        &mut self,
+        theme: Theme,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> AnyElement {
         let state = &self.categorize;
+        let compact = window.viewport_size().width < px(760.);
+        let narrow = window.viewport_size().width < px(560.);
         let idle = state.job.is_none() && !state.picking && state.confirmation.is_none();
         let has_folder = state.folder.is_some();
+        let has_preview = state.preview.is_some();
+        let folder_name = state
+            .folder
+            .as_ref()
+            .and_then(|p| p.file_name())
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_else(|| {
+                if has_folder {
+                    "Selected folder"
+                } else {
+                    "Choose a folder to organize"
+                }
+                .into()
+            });
         let folder = state
             .folder
             .as_ref()
-            .map(|p| p.display().to_string())
-            .unwrap_or_else(|| "No folder selected".into());
-        let moves = state.preview.as_ref().map_or(0, |p| {
-            p.entries
-                .iter()
-                .filter(|e| e.category.is_some() && e.error.is_none())
-                .count()
-        });
+            .map(|p| gyotaku_core::tidy(p))
+            .unwrap_or_else(|| "Downloads, documents, or any folder on this computer".into());
         let total = state.preview.as_ref().map_or(0, |p| p.entries.len());
+        let mut counts = [0usize; Category::ALL.len()];
+        if let Some(preview) = &state.preview {
+            for entry in &preview.entries {
+                if let Some(category) = entry.category.filter(|_| entry.error.is_none())
+                    && let Some(index) = Category::ALL.iter().position(|c| *c == category)
+                {
+                    counts[index] += 1;
+                }
+            }
+        }
+        let moves: usize = counts.iter().sum();
+        let folders = counts.iter().filter(|n| **n > 0).count();
         let rows = state.rows.clone();
-        let mut settings = div().flex_none().px_6().py_3().flex().flex_col().gap_2()
-            .child(div().text_sm().child("Categorize immediate files into subfolders. Existing subfolders are not scanned."))
-            .child(div().flex().items_center().gap_3()
-                .child(self.categorize_control(0, if state.picking { "Choosing folder..." } else { "Choose folder..." }, idle, theme, cx))
-                .child(div().flex_1().min_w(px(0.)).text_sm().text_ellipsis().child(folder.clone())))
-            .child(div().flex().gap_2()
-                .child(self.categorize_control(1, if state.images { "Names only" } else { "Names only (selected)" }, idle, theme, cx))
-                .child(self.categorize_control(2, if state.images { "Include images (selected)" } else { "Include images" }, idle, theme, cx)))
-            .child(div().text_xs().text_color(theme.muted).child(if state.images {
-                "Analyze authorizes uploading filenames and supported image previews to Jev via Typesafe. Other file contents and full paths are not sent."
-            } else {
-                "Analyze authorizes sending filenames to Jev via Typesafe. File contents, images and full paths stay local."
-            }))
-            .child(div().text_xs().text_color(theme.muted).child("Uses TYPESAFE_API_KEY from your environment or .env. Your key is never saved in app settings."));
-        if let Some(operation) = state.confirmation {
-            let question = match operation {
-                Confirmation::Organize => format!(
-                    "Move {} files into the previewed subfolders of {folder}? This creates real folders and moves files. Errors remain untouched.",
-                    thousands(moves)
-                ),
-                Confirmation::Undo => format!(
-                    "Restore all files still recorded as organized in {folder}? Undo uses this folder's persisted journal, including after restarting the app. Conflicts and changed files stay untouched."
-                ),
-            };
-            settings = settings.child(
+
+        let source = div()
+            .flex_none()
+            .mx_6()
+            .mt_4()
+            .p_4()
+            .rounded(px(12.))
+            .bg(theme.keycap)
+            .child(
                 div()
-                    .p_3()
-                    .rounded(px(8.))
-                    .bg(theme.keycap)
                     .flex()
-                    .flex_col()
-                    .gap_2()
-                    .child(div().text_sm().child(question))
+                    .items_center()
+                    .gap_4()
                     .child(
                         div()
-                            .flex()
-                            .gap_2()
-                            .child(self.categorize_control(6, "Cancel", true, theme, cx))
-                            .child(self.categorize_control(
-                                7,
-                                match operation {
-                                    Confirmation::Undo => "Confirm undo",
-                                    Confirmation::Organize => "Confirm organize",
-                                },
-                                true,
-                                theme,
-                                cx,
-                            )),
-                    ),
+                            .flex_1()
+                            .min_w(px(0.))
+                            .child(
+                                div()
+                                    .text_size(px(18.))
+                                    .font_weight(FontWeight::MEDIUM)
+                                    .text_ellipsis()
+                                    .child(folder_name),
+                            )
+                            .child(
+                                div()
+                                    .mt_1()
+                                    .text_size(px(12.))
+                                    .text_color(theme.muted)
+                                    .text_ellipsis()
+                                    .child(folder),
+                            ),
+                    )
+                    .child(self.categorize_control(
+                        0,
+                        if state.picking {
+                            "Choosing..."
+                        } else if has_folder {
+                            "Change folder"
+                        } else {
+                            "Choose folder"
+                        },
+                        idle,
+                        theme,
+                        cx,
+                    )),
             );
-        } else if let Some(job) = &state.job {
+
+        let setup = div().flex_none().px_6().py_4().flex().flex_col().gap_3()
+            .child(div().flex().flex_wrap().items_center().gap_3()
+                .child(div().text_size(px(14.)).font_weight(FontWeight::MEDIUM).child("Send to Jev"))
+                .child(div().flex().gap_1()
+                    .child(self.categorize_control(1, "Names only", idle, theme, cx))
+                    .child(self.categorize_control(2, "Include images", idle, theme, cx)))
+                .when(!has_preview && state.job.is_none() && state.confirmation.is_none(), |el| el.child(
+                    self.categorize_control(3, "Analyze folder", idle && has_folder, theme, cx))))
+            .child(div().text_size(px(13.)).text_color(theme.muted).child(if state.images {
+                "Analyze uploads filenames and supported image previews to TypeSafe. Image analysis is experimental."
+            } else {
+                "Analyze sends filenames to TypeSafe. File contents and images stay on this computer."
+            }))
+            .child(div().text_size(px(12.)).text_color(theme.muted)
+                .child(if narrow { "Subfolders stay untouched. Full paths stay local." } else {
+                    "Only files directly in this folder. Existing subfolders are left alone. Full paths are never sent."
+                }));
+
+        let mut activity = div().flex_none().px_6().flex().flex_col().gap_2();
+        if let Some(job) = &state.job {
             let progress = job.progress.lock().unwrap_or_else(|e| e.into_inner());
-            let status = if matches!(job.operation, Operation::Analyze) {
-                if job.cancel.load(Ordering::Relaxed) {
-                    "Cancelling after the current request...".into()
+            let analyzing = matches!(job.operation, Operation::Analyze);
+            let cancelling = job.cancel.load(Ordering::Relaxed);
+            let status = if analyzing {
+                if cancelling {
+                    "Cancelling after the current request".into()
                 } else if progress.total == 0 {
-                    "Analyzing: checking API key and reading folder...".into()
+                    "Reading folder and preparing analysis".into()
                 } else {
                     format!(
-                        "Analyzing: {} of {} files",
+                        "Analyzing {} of {} files",
                         thousands(progress.done),
                         thousands(progress.total)
                     )
                 }
             } else {
-                format!(
-                    "{}... Let this finish safely; undo is saved on disk.",
-                    job.operation.running()
-                )
+                format!("{}; recovery is saved on disk", job.operation.running())
             };
-            settings = settings.child(
-                div()
-                    .flex()
-                    .items_center()
-                    .gap_3()
-                    .child(div().flex_1().text_sm().child(status))
-                    .when(matches!(job.operation, Operation::Analyze), |el| {
-                        el.child(self.categorize_control(
-                            3,
-                            "Cancel analysis",
-                            !job.cancel.load(Ordering::Relaxed),
-                            theme,
-                            cx,
-                        ))
-                    }),
-            );
-        } else {
-            settings = settings.child(
-                div()
-                    .flex()
-                    .gap_2()
-                    .child(self.categorize_control(3, "Analyze", idle && has_folder, theme, cx))
-                    .child(self.categorize_control(4, "Organize...", idle && moves > 0, theme, cx))
-                    .child(self.categorize_control(
-                        5,
-                        "Undo organization...",
-                        idle && has_folder,
-                        theme,
-                        cx,
-                    )),
-            );
+            activity = activity
+                .pb_4()
+                .child(
+                    div()
+                        .flex()
+                        .items_center()
+                        .gap_3()
+                        .child(div().flex_1().text_size(px(14.)).child(status))
+                        .when(analyzing, |el| {
+                            el.child(self.categorize_control(
+                                3,
+                                "Cancel analysis",
+                                !cancelling,
+                                theme,
+                                cx,
+                            ))
+                        }),
+                )
+                .when(analyzing && progress.total > 0, |el| {
+                    el.child(
+                        div()
+                            .w_full()
+                            .h(px(4.))
+                            .rounded(px(2.))
+                            .bg(theme.track)
+                            .child(div().h_full().rounded(px(2.)).bg(theme.text).w(relative(
+                                (progress.done as f32 / progress.total.max(1) as f32).clamp(0., 1.),
+                            ))),
+                    )
+                })
+                .child(
+                    div()
+                        .text_size(px(12.))
+                        .text_color(theme.muted)
+                        .child("You can return to search. This job will keep running."),
+                );
         }
         if let Some(message) = &state.message {
-            settings = settings.child(
+            activity = activity.child(
                 div()
-                    .text_sm()
-                    .text_color(theme.text)
+                    .id("categorize-result")
+                    .max_h(px(96.))
+                    .overflow_y_scroll()
+                    .mb_4()
+                    .p_3()
+                    .rounded(px(8.))
+                    .bg(theme.keycap)
+                    .text_size(px(13.))
                     .child(message.clone()),
             );
         }
-        let has_preview = state.preview.is_some();
-        div().flex_1().min_h(px(0.)).flex().flex_col()
-            .child(div().flex_none().h(px(super::HEADER)).px_6().flex().items_center().justify_between()
-                .border_b_1().border_color(theme.hairline)
-                .child(div().text_size(px(21.)).child("Categorize"))
-                .child(div().id("categorize-back").px_3().py_2().rounded(px(8.)).text_sm()
-                    .cursor(CursorStyle::PointingHand).hover(move |el| el.bg(theme.hover_wash))
-                    .on_click(cx.listener(|this, _: &ClickEvent, window, cx| this.categorize_back(window, cx)))
-                    .child("Back to search")))
-            .child(settings)
-            .child(div().flex_none().px_6().py_2().text_sm().child(if has_preview {
-                format!("Preview: {} files, {} to move, {} unchanged. Skip any file to leave it in place.", thousands(total), thousands(moves), thousands(total - moves))
-            } else { "Preview".into() }))
-            .child(if has_preview {
-                list(rows, cx.processor(Self::render_categorize_rows)).flex_1().min_h(px(0.)).into_any_element()
+
+        let mut workspace =
+            div().flex_1().min_h(px(0.)).flex().flex_col().child(
+                div()
+                    .flex_none()
+                    .px_6()
+                    .py_3()
+                    .flex()
+                    .flex_wrap()
+                    .items_center()
+                    .justify_between()
+                    .gap_3()
+                    .child(
+                        div()
+                            .text_size(px(16.))
+                            .font_weight(FontWeight::MEDIUM)
+                            .child("Destination preview"),
+                    )
+                    .child(div().text_size(px(13.)).text_color(theme.muted).child(
+                        if has_preview {
+                            format!(
+                                "{} files reviewed / {} staying here",
+                                thousands(total),
+                                thousands(total - moves)
+                            )
+                        } else {
+                            "Nothing moves during analysis".into()
+                        },
+                    )),
+            );
+        if has_preview && folders > 0 && !narrow {
+            workspace = workspace.child(
+                div()
+                    .flex_none()
+                    .px_6()
+                    .pb_3()
+                    .flex()
+                    .flex_wrap()
+                    .gap_2()
+                    .children(
+                        Category::ALL
+                            .iter()
+                            .zip(counts)
+                            .filter(|(_, count)| *count > 0)
+                            .map(|(category, count)| {
+                                div()
+                                    .px_3()
+                                    .py_1()
+                                    .rounded(px(6.))
+                                    .bg(theme.keycap)
+                                    .text_size(px(12.))
+                                    .child(format!(
+                                        "{}  {}",
+                                        category.folder_name(),
+                                        thousands(count)
+                                    ))
+                            }),
+                    ),
+            );
+        }
+        if has_preview && total > 0 {
+            workspace = workspace
+                .child(
+                    div()
+                        .flex_none()
+                        .px_6()
+                        .py_2()
+                        .flex()
+                        .items_center()
+                        .gap_4()
+                        .text_size(px(12.))
+                        .text_color(theme.muted)
+                        .child(div().flex_1().child(if compact {
+                            "File and destination folder"
+                        } else {
+                            "File"
+                        }))
+                        .when(!compact, |el| {
+                            el.child(div().w(relative(0.34)).child("Destination folder"))
+                        })
+                        .child(div().w(px(84.)).flex_none().text_right().child("Review")),
+                )
+                .child(
+                    list(rows, cx.processor(Self::render_categorize_rows))
+                        .w_full()
+                        .flex_1()
+                        .min_h(px(0.)),
+                );
+        } else {
+            let (title, detail) = if state.job.is_some() {
+                (
+                    "Your preview is being prepared",
+                    "Proposed destinations will appear here when analysis finishes.",
+                )
+            } else if has_preview {
+                (
+                    "No eligible files in this folder",
+                    "Subfolders, hidden files, incomplete downloads, and credential-like filenames are not analyzed.",
+                )
+            } else if has_folder {
+                (
+                    "Ready to find a place for your files",
+                    "Analyze this folder to review each file beside its proposed destination. You choose what moves.",
+                )
             } else {
-                div().flex_1().min_h(px(0.)).px_6().py_3().text_sm().text_color(theme.muted)
-                    .child("Choose a folder and Analyze to review destinations before anything moves. To undo an earlier organization, choose that folder and use Undo without analyzing.").into_any_element()
-            })
-            .child(div().flex_none().px_6().py_2().text_xs().text_color(theme.muted)
-                .child("Use Up / Down to select, Enter to activate, Esc to return. Jobs and previews stay available when you leave this screen."))
+                (
+                    "A place for every file",
+                    "Choose a folder above. Jev suggests destinations; you review the plan before creating folders or moving files.",
+                )
+            };
+            workspace = workspace.child(div().px_6().py_5().flex().flex_col().gap_2()
+                .child(div().text_size(px(18.)).child(title))
+                .child(div().max_w(px(580.)).text_size(px(14.)).text_color(theme.muted).child(detail))
+                .when(!has_folder, |el| el.child(div().mt_3().text_size(px(12.))
+                    .text_color(theme.muted).child("Uses TYPESAFE_API_KEY from your environment or .env. Your key is never saved in settings."))));
+        }
+
+        let mut footer = div()
+            .flex_none()
+            .px_6()
+            .py_4()
+            .bg(theme.keycap)
+            .flex()
+            .flex_col()
+            .gap_3();
+        if let Some(confirmation) = state.confirmation {
+            let (title, detail, confirm) = match confirmation {
+                Confirmation::Organize => (
+                    format!(
+                        "Move {} files into {} category folders?",
+                        thousands(moves),
+                        thousands(folders)
+                    ),
+                    "Folders are created inside the selected folder. Existing files are never overwritten. You can undo these moves.",
+                    "Create folders and move",
+                ),
+                Confirmation::Undo => (
+                    "Restore all recorded moves in this folder?".into(),
+                    "Includes earlier organization runs. Changed files and occupied original locations stay untouched.",
+                    "Restore files",
+                ),
+            };
+            footer = footer
+                .child(
+                    div()
+                        .text_size(px(16.))
+                        .font_weight(FontWeight::MEDIUM)
+                        .child(title),
+                )
+                .child(
+                    div()
+                        .text_size(px(13.))
+                        .text_color(theme.muted)
+                        .child(detail),
+                )
+                .child(
+                    div()
+                        .flex()
+                        .flex_wrap()
+                        .justify_end()
+                        .gap_2()
+                        .child(self.categorize_control(
+                            6,
+                            match confirmation {
+                                Confirmation::Organize => "Keep reviewing",
+                                Confirmation::Undo => "Cancel",
+                            },
+                            true,
+                            theme,
+                            cx,
+                        ))
+                        .child(self.categorize_control(7, confirm, true, theme, cx)),
+                );
+        } else {
+            footer = footer.child(
+                div()
+                    .flex()
+                    .flex_wrap()
+                    .items_center()
+                    .justify_between()
+                    .gap_3()
+                    .child(
+                        div()
+                            .flex()
+                            .flex_col()
+                            .gap_1()
+                            .child(
+                                div()
+                                    .text_size(px(14.))
+                                    .font_weight(FontWeight::MEDIUM)
+                                    .child(if has_preview {
+                                        format!(
+                                            "{} files to move into {} folders",
+                                            thousands(moves),
+                                            thousands(folders)
+                                        )
+                                    } else {
+                                        "Review first. Move only when ready.".into()
+                                    }),
+                            )
+                            .child(
+                                div()
+                                    .text_size(px(12.))
+                                    .text_color(theme.muted)
+                                    .child("No overwrites. A local journal keeps moves undoable."),
+                            ),
+                    )
+                    .child(
+                        div()
+                            .flex()
+                            .flex_wrap()
+                            .when(compact, |el| el.w_full())
+                            .justify_end()
+                            .gap_2()
+                            .child(self.categorize_control(
+                                5,
+                                "Undo organization",
+                                idle && has_folder,
+                                theme,
+                                cx,
+                            ))
+                            .when(has_preview, |el| {
+                                el.child(self.categorize_control(
+                                    3,
+                                    "Analyze again",
+                                    idle && has_folder,
+                                    theme,
+                                    cx,
+                                ))
+                                .child(self.categorize_control(
+                                    4,
+                                    "Review moves",
+                                    idle && moves > 0,
+                                    theme,
+                                    cx,
+                                ))
+                            }),
+                    ),
+            );
+        }
+
+        div()
+            .w_full()
+            .flex_1()
+            .min_h(px(0.))
+            .flex()
+            .flex_col()
+            .child(
+                div()
+                    .flex_none()
+                    .px_6()
+                    .py_4()
+                    .flex()
+                    .items_center()
+                    .justify_between()
+                    .gap_3()
+                    .child(
+                        div()
+                            .flex()
+                            .items_center()
+                            .gap_3()
+                            .child(
+                                div()
+                                    .text_size(px(14.))
+                                    .text_color(theme.muted)
+                                    .child("Nemo"),
+                            )
+                            .child(
+                                div()
+                                    .text_size(px(22.))
+                                    .font_weight(FontWeight::MEDIUM)
+                                    .child("Categorize"),
+                            ),
+                    )
+                    .child(
+                        div()
+                            .id("categorize-back")
+                            .h(px(36.))
+                            .px_3()
+                            .flex()
+                            .items_center()
+                            .rounded(px(18.))
+                            .text_size(px(13.))
+                            .cursor(CursorStyle::PointingHand)
+                            .hover(move |el| el.bg(theme.hover_wash))
+                            .on_click(cx.listener(|this, _: &ClickEvent, window, cx| {
+                                this.categorize_back(window, cx)
+                            }))
+                            .child("Back to search"),
+                    ),
+            )
+            .child(source)
+            .child(setup)
+            .child(activity)
+            .child(workspace)
+            .child(footer)
             .into_any_element()
     }
 }
