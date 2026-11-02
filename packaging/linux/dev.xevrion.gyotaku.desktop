@@ -1,8 +1,8 @@
 [Desktop Entry]
 Type=Application
-Name=gyotaku
-GenericName=Screenshot Search
-Comment=Search your screenshots by the text in them. Bind a key to gyotaku-app to open it from anywhere
+Name=Nemo
+GenericName=Screenshot and Image Search
+Comment=Search screenshots and images. Bind a key to gyotaku-app to open Nemo from anywhere
 Exec=gyotaku-app
 Icon=dev.xevrion.gyotaku
 Terminal=false

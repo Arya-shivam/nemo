@@ -191,7 +191,7 @@ fn open_window(size: Size<gpui::Pixels>, cx: &mut App) -> gpui::WindowHandle<Gyo
         WindowOptions {
             window_bounds: Some(WindowBounds::Windowed(Bounds::centered(None, size, cx))),
             titlebar: Some(TitlebarOptions {
-                title: Some("gyotaku".into()),
+                title: Some("Nemo".into()),
                 ..Default::default()
             }),
             app_id: Some("gyotaku".into()),

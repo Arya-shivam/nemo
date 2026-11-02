@@ -1,4 +1,4 @@
-//! Build script for both programs: on Windows it gives the .exe the gyotaku
+//! Build script for both programs: on Windows it gives the .exe the Nemo
 //! icon and the name and version Explorer, Task Manager and Apps show. gpui
 //! loads icon 1 from the running program for its window, so that's set too.
 //!
@@ -36,13 +36,13 @@ BEGIN
   BEGIN
     BLOCK "040904b0"
     BEGIN
-      VALUE "CompanyName", "gyotaku"
+      VALUE "CompanyName", "Nemo"
       VALUE "FileDescription", "{description}"
       VALUE "FileVersion", "{version}"
       VALUE "InternalName", "{name}"
       VALUE "LegalCopyright", "{license}"
       VALUE "OriginalFilename", "{name}.exe"
-      VALUE "ProductName", "gyotaku"
+      VALUE "ProductName", "Nemo"
       VALUE "ProductVersion", "{version}"
     END
   END

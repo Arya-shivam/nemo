@@ -17,14 +17,14 @@
 
 [Setup]
 AppId=gyotaku
-AppName=gyotaku
+AppName=Nemo
 AppVersion={#AppVersion}
-AppVerName=gyotaku {#AppVersion}
+AppVerName=Nemo {#AppVersion}
 AppPublisher=xevrion
 AppPublisherURL=https://github.com/xevrion/gyotaku
 AppSupportURL=https://github.com/xevrion/gyotaku/issues
 AppUpdatesURL=https://github.com/xevrion/gyotaku/releases
-AppComments=Search every screenshot by the text inside it
+AppComments=Search screenshots and images, and organize files by name
 DefaultDirName={localappdata}\Programs\gyotaku
 DisableDirPage=yes
 DisableProgramGroupPage=yes
@@ -40,7 +40,7 @@ SetupIconFile=..\..\assets\gyotaku.ico
 WizardSmallImageFile=wizard-small-55.bmp,wizard-small-110.bmp
 WizardStyle=modern
 UninstallDisplayIcon={app}\gyotaku-app.exe
-UninstallDisplayName=gyotaku
+UninstallDisplayName=Nemo
 Compression=lzma2/max
 SolidCompression=yes
 ; gyotaku is stopped by PrepareToInstall below. Restart Manager would ask
@@ -54,14 +54,14 @@ Name: startwithwindows; Description: "Start with Windows, so new screenshots are
 Source: "{#Payload}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{userprograms}\gyotaku"; Filename: "{app}\gyotaku-app.exe"; WorkingDir: "{app}"; Comment: "Search every screenshot by the text inside it"
+Name: "{userprograms}\Nemo"; Filename: "{app}\gyotaku-app.exe"; WorkingDir: "{app}"; Comment: "Search screenshots and images"
 
 [Registry]
 ; The same value the switch in gyotaku's settings writes.
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "gyotaku"; ValueData: """{app}\gyotaku-app.exe"" --background"; Tasks: startwithwindows
 
 [Run]
-Filename: "{app}\gyotaku-app.exe"; Description: "Open gyotaku"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\gyotaku-app.exe"; Description: "Open Nemo"; Flags: nowait postinstall skipifsilent
 ; A silent update over a running gyotaku brings it back the way sign-in
 ; does: waiting for the summon key, with no window.
 Filename: "{app}\gyotaku-app.exe"; Parameters: "--background"; Flags: nowait; Check: RestartQuietly

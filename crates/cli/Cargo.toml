@@ -1,6 +1,6 @@
 [package]
 name = "gyotaku"
-description = "Search every screenshot you have ever taken by the text inside it"
+description = "Search screenshots by text or visual content with Nemo"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

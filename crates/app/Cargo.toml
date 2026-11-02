@@ -1,6 +1,6 @@
 [package]
 name = "gyotaku-app"
-description = "The gyotaku search window"
+description = "Nemo screenshot and visual search window"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

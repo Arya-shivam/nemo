@@ -316,7 +316,7 @@ fn autostart_entry(exec: &str) -> String {
     format!(
         "[Desktop Entry]\n\
          Type=Application\n\
-         Name=gyotaku watcher\n\
+         Name=Nemo watcher\n\
          Comment=Reads new screenshots so they can be searched\n\
          Exec={exec} watch\n\
          NoDisplay=true\n\
@@ -356,7 +356,7 @@ fn install_unit() -> std::io::Result<()> {
 fn unit_file(exec: &str) -> String {
     format!(
         "[Unit]\n\
-         Description=gyotaku, reads new screenshots so they can be searched\n\
+         Description=Nemo, reads new screenshots so they can be searched\n\
          Documentation=https://github.com/xevrion/gyotaku\n\
          \n\
          [Service]\n\

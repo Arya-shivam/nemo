@@ -3,22 +3,18 @@
   <id>dev.xevrion.gyotaku</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
-  <name>gyotaku</name>
-  <summary>Search your screenshots by the text in them</summary>
+  <name>Nemo</name>
+  <summary>Search screenshots and images, and organize files by name</summary>
   <developer id="dev.xevrion">
     <name>Yash Bavadiya</name>
   </developer>
   <description>
     <p>
-      gyotaku reads the text in every screenshot you take and makes it
-      searchable. Press a shortcut, type a few letters of anything you
-      remember seeing, and every matching screenshot appears with the matched
-      words highlighted in place. Open one to copy its text, a selection of
-      lines, or the image itself.
-    </p>
-    <p>
-      Everything happens on your machine. There are no accounts and no
-      telemetry, and it runs fast with or without a GPU.
+      Nemo indexes screenshot text and visual features on your computer, so
+      you can find an image by words you remember or a visual description.
+      It also proposes file categories from filenames using TypeSafe.
+      Optional image mode uploads supported image previews. You review the
+      proposed changes before local folders are created or files move.
     </p>
     <ul>
       <li>1 to 10 ms per keystroke across 5,000+ screenshots</li>

@@ -1008,7 +1008,7 @@ impl Gyotaku {
                 .gap_5()
                 .child(hint("\u{2191} \u{2193}", "move", theme))
                 .child(hint("\u{2190} \u{2192}", "change", theme))
-                .child(div().child(format!("gyotaku {}", env!("CARGO_PKG_VERSION"))))
+                .child(div().child(format!("Nemo {}", env!("CARGO_PKG_VERSION"))))
         };
 
         div()
@@ -1149,7 +1149,7 @@ impl Gyotaku {
                 );
                 (
                     "where do your screenshots go?",
-                    "gyotaku reads every image in the folders you pick, subfolders too, and keeps up with new ones.",
+                    "Nemo reads every image in the folders you pick, subfolders too, and keeps up with new ones.",
                     rows,
                 )
             }

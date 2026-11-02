@@ -1,5 +1,5 @@
 [Unit]
-Description=gyotaku, reads new screenshots so they can be searched
+Description=Nemo, reads new screenshots so they can be searched
 Documentation=https://github.com/xevrion/gyotaku
 
 [Service]

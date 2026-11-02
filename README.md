@@ -1,11 +1,10 @@
 <p align="center">
-  <img src="docs/banner.png" alt="gyotaku: search every screenshot by the text inside it" width="100%" />
+  <img src="docs/banner.png" alt="Nemo: search screenshots and images, and categorize files" width="100%" />
 </p>
 
 <p align="center">
-  Search every screenshot by its text or visual content.<br>
-  Native on Linux and Windows, fully offline, and fast on any hardware, with or without a GPU.
-</p>
+  Native on Linux and Windows. Screenshot indexing and search stay local.<br>
+  Category suggestions use TypeSafe when you choose Analyze folder.
 
 <h4 align="center">
   <a href="#installation">Installation</a> |
@@ -21,11 +20,11 @@
   <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs welcome" /></a>
 </p>
 
-gyotaku reads text and indexes visual content in every screenshot, so you can search by words or describe what you remember seeing. Screenshots with little or no readable text can appear in visual search results. Open one to copy its text, a selection of lines, or the image itself.
+Nemo reads text and indexes visual content in every screenshot, so you can search by words or describe what you remember seeing. Screenshots with little or no readable text can appear in visual search results. Open one to copy its text, a selection of lines, or the image itself.
 
 This fork of [gyotaku](https://github.com/xevrion/gyotaku) adds local TinyCLIP-based visual search alongside OCR (2026-10-15).
 
-All processing happens locally. gyotaku does not take screenshots itself; it indexes the folders your existing screenshot tool saves to.
+Screenshot indexing and visual search run locally. Folder categorization sends filenames to TypeSafe; optional image mode also uploads supported image previews. Nemo indexes folders your existing screenshot tool saves to, but does not capture screenshots itself.
 
 ## Highlights
 
@@ -48,7 +47,7 @@ It also runs without a GPU, using software rendering. All figures were measured 
 curl -fsSL https://raw.githubusercontent.com/xevrion/gyotaku/main/install.sh | sh
 ```
 
-The script downloads the latest release for your machine, verifies its SHA-256 checksum and installs `gyotaku` and `gyotaku-app` to `~/.local/bin`, with an entry in your app launcher. It needs no root access and changes nothing outside your home directory. On a first install it opens gyotaku so you can choose your screenshot folders, then shows how to add a keyboard shortcut for your desktop.
+The script downloads the latest release for your machine, verifies its SHA-256 checksum and installs `gyotaku` and `gyotaku-app` to `~/.local/bin`, with an entry in your app launcher. It needs no root access and changes nothing outside your home directory. On a first install it opens Nemo so you can choose your screenshot folders, then shows how to add a keyboard shortcut for your desktop.
 
 Each release also has a `.deb` for Debian and Ubuntu and an `.rpm` for Fedora and openSUSE, which install to `/usr/bin` through your package manager:
 
@@ -73,9 +72,9 @@ Windows support is a preview. In PowerShell:
 irm https://raw.githubusercontent.com/xevrion/gyotaku/main/install.ps1 | iex
 ```
 
-This installs to `%LOCALAPPDATA%\Programs\gyotaku`, adds gyotaku to the Start menu and opens it. Press **Alt+Shift+S** anywhere to open or close the search window. No administrator rights are needed. Windows 10 and 11 on x64 are supported; ARM64 runs the x64 build through emulation.
+This installs to `%LOCALAPPDATA%\Programs\gyotaku`, adds Nemo to the Start menu and opens it. Press **Alt+Shift+S** anywhere to open or close the search window. No administrator rights are needed. Windows 10 and 11 on x64 are supported; ARM64 runs the x64 build through emulation.
 
-If you prefer a regular installer, download [`gyotaku-setup-x86_64.exe`](https://github.com/xevrion/gyotaku/releases/latest/download/gyotaku-setup-x86_64.exe) from the latest release and run it. It installs the same files to the same folder, also without administrator rights, and lists gyotaku in Settings > Apps so it can be uninstalled from there. The setup is not code-signed yet, so SmartScreen may warn about an unknown publisher; choose **More info** and then **Run anyway**. The setup and the PowerShell command update each other's installs.
+If you prefer a regular installer, download [`gyotaku-setup-x86_64.exe`](https://github.com/xevrion/gyotaku/releases/latest/download/gyotaku-setup-x86_64.exe) from the latest release and run it. It installs the same files to the same folder, also without administrator rights, and lists Nemo in Settings > Apps so it can be uninstalled from there. The setup is not code-signed yet, so SmartScreen may warn about an unknown publisher; choose **More info** and then **Run anyway**. The setup and the PowerShell command update each other's installs.
 
 ### macOS
 
@@ -98,14 +97,14 @@ Not supported yet. It is on the [roadmap](#roadmap).
 
 ### First run
 
-On first launch, gyotaku asks:
+On first launch, Nemo asks:
 
 1. **Which folders contain your screenshots.** It suggests the save locations of common screenshot tools (Flameshot, Spectacle, ksnip, grim, Hyprshot, niri) along with `~/Pictures/Screenshots`, `~/Pictures` and `~/Desktop`, with the number of images in each. On Windows it suggests `Pictures\Screenshots`, where Win+PrtScn and the Snipping Tool save.
-2. **Whether to index new screenshots in the background.** On Linux this installs a systemd user service, or an XDG autostart entry on systems without systemd. On Windows it starts gyotaku when you sign in.
+2. **Whether to index new screenshots in the background.** On Linux this installs a systemd user service, or an XDG autostart entry on systems without systemd. On Windows it starts Nemo when you sign in.
 
 Indexing starts immediately, newest screenshots first, at idle CPU and I/O priority. Search is available while it runs.
 
-Before the first screenshot is read, gyotaku downloads the OCR models once (22 MB) and the TinyCLIP model and tokenizer for visual search. On Linux it downloads ONNX Runtime as well (24 MB). No network access is needed after that.
+Before the first screenshot is read, Nemo downloads the OCR models once (22 MB) and the TinyCLIP model and tokenizer for visual search. On Linux it downloads ONNX Runtime as well (24 MB). No network access is needed after that.
 
 ### Updating
 
@@ -125,9 +124,9 @@ Windows, in PowerShell:
 $env:GYOTAKU_UNINSTALL = 1; irm https://raw.githubusercontent.com/xevrion/gyotaku/main/install.ps1 | iex
 ```
 
-Installed with the setup, gyotaku can also be uninstalled from Settings > Apps, which asks whether to delete the index and settings too.
+Installed with the setup, Nemo can also be uninstalled from Settings > Apps, which asks whether to delete the index and settings too.
 
-Both commands stop the background indexer and remove the programs, and print how to also remove the index and settings. Remove the keyboard shortcut yourself. gyotaku never modifies or deletes your screenshots unless you move them to the trash yourself.
+Both commands stop the background indexer and remove the programs, and print how to also remove the index and settings. Remove the keyboard shortcut yourself. Nemo never modifies or deletes your screenshots unless you move them to the trash yourself.
 
 ### Build from source
 
@@ -163,7 +162,7 @@ Optional: install `wl-clipboard` (Wayland) or `xclip` (X11) to enable copying im
 
 #### 2. Install Rust
 
-gyotaku requires Rust 1.95 or newer. Install it with [rustup](https://rustup.rs) rather than your distribution's package manager, whose version is usually older:
+Nemo requires Rust 1.95 or newer. Install it with [rustup](https://rustup.rs) rather than your distribution's package manager, whose version is usually older:
 
 ```sh
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
@@ -243,7 +242,7 @@ Suggestions are welcome as [feature requests](https://github.com/xevrion/gyotaku
 
 Open **Categorize** from the search window and choose a folder. Only immediate files are considered; existing subfolders are left alone. Names-only mode sends filenames, not contents or absolute paths, to TypeSafe. Optional image mode uploads image previews for supported images; other files still use filenames. Image classification is experimental.
 
-Set `TYPESAFE_API_KEY` in the environment or a local `.env` file before analyzing. Do not commit the key. Review the proposed destination of every file before confirming **Organize**. The app creates category subfolders and moves classified files into them. Uncertain files, conflicts, and failed operations stay in place. Existing files are never overwritten.
+Set `TYPESAFE_API_KEY` in the environment or a local `.env` file before selecting **Analyze folder**. Do not commit the key. The destination preview lists each file beside its proposed category folder and shows how many files will stay in place. Use **Skip** or **Include** to adjust the plan, then select **Review moves** and confirm **Create folders and move**. The app creates category subfolders and moves classified files into them. Uncertain files, conflicts, and failed operations stay in place. Existing files are never overwritten. Analysis shows progress and can be cancelled; leaving the screen does not cancel a running job.
 
 Use **Undo organization** for the selected folder to restore all files still recorded as organized in its local operation journal, including earlier runs. Files changed after organization or conflicting with an existing original location require manual review and are not overwritten. Keep the journal until the organization has been reviewed. Hidden files, incomplete downloads, links, and filenames suggesting credentials or private keys are excluded before any API call; this filter does not guarantee that other filenames are free of private information.
 
@@ -274,7 +273,7 @@ Text detection post-processing, line extraction, batching and decoding are imple
 
 ## About the name
 
-Gyotaku (魚拓) is a traditional Japanese method of recording a catch: the fish is inked and pressed onto paper to make a lasting print. The search window borrows the idea. While you search, every screenshot is inked dark and only the matching words remain lit.
+Nemo helps you navigate a sea of screenshots and files: find saved screenshots by the words or visuals you remember, and sort folders by their filenames.
 
 ## Star history
 
@@ -288,6 +287,6 @@ Gyotaku (魚拓) is a traditional Japanese method of recording a catch: the fish
 
 ## License
 
-gyotaku is licensed under the [GNU General Public License v3.0 or later](LICENSE).
+Nemo is licensed under the [GNU General Public License v3.0 or later](LICENSE).
 
 IBM Plex Sans is bundled under the SIL Open Font License 1.1 ([`crates/app/fonts/OFL.txt`](crates/app/fonts/OFL.txt)). The PaddleOCR models are licensed under Apache-2.0 and the TinyCLIP ONNX model under MIT; they are downloaded at runtime and not distributed with this repository.
