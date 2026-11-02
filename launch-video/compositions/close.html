@@ -1,0 +1,25 @@
+<template>
+  <style>
+    #root{position:absolute;inset:0;overflow:hidden;background:var(--screen);color:var(--paper);font-family:Inter,sans-serif;--paper:#f3f1eb;--ink:#171717;--mark:#ff7438;--screen:#141416}.clip{position:absolute}.undo-line{left:142px;top:184px;width:1600px;margin:0;font-size:140px;line-height:.9;letter-spacing:-.06em;font-weight:900;text-transform:uppercase;color:var(--mark)}.undo-screen{left:120px;top:565px;width:1680px;height:210px;overflow:hidden;background:#141416}.undo-move{width:100%;height:100%}.undo-move img{display:block;width:100%;height:100%;object-fit:fill}.card{position:absolute;inset:0;background:var(--screen);overflow:hidden}.fish{left:190px;top:284px;width:550px;height:413px;overflow:hidden}.fish-move{width:100%;height:100%}.fish img{display:block;width:100%;height:100%;object-fit:contain}.brand{left:790px;top:354px;width:930px;margin:0;font-size:180px;line-height:.85;letter-spacing:-.065em;font-weight:900;color:var(--paper)}.tagline{left:806px;top:547px;width:910px;margin:0;font-size:66px;line-height:.98;letter-spacing:-.045em;font-weight:700;color:var(--mark)}.cta{left:812px;top:694px;width:890px;margin:0;font-size:36px;line-height:1.1;font-weight:700;color:var(--paper)}
+  </style>
+  <div data-hf-id="hf-nemo-close-root" id="root" data-composition-id="close" data-width="1920" data-height="1080" data-composition-variables='[{"id":"undoLine","type":"string","label":"Undo message","default":"UNDO BUILT IN."},{"id":"brandName","type":"string","label":"Product name","default":"Nemo"},{"id":"tagline","type":"string","label":"Tagline","default":"Find it. Sort it."},{"id":"cta","type":"string","label":"Call to action","default":"Try it: github.com/Arya-shivam/nemo"},{"id":"fish","type":"string","label":"Nemo mark","default":"assets/nemo-logo.webp"}]'>
+    <h1 data-hf-id="hf-nemo-close-undo-line" id="close-undo-line" class="clip undo-line" data-var-text="undoLine" data-start="0" data-duration="1.5">UNDO BUILT IN.</h1>
+    <div data-hf-id="hf-nemo-close-undo-screen" id="close-undo-screen" class="clip undo-screen" data-start="0" data-duration="1.5" data-track-index="1"><div id="close-undo-move" class="undo-move"><img src="assets/nemo-category-undo.png" alt="Nemo organization review with an undo action and no-overwrite safety note" /></div></div>
+    <div data-hf-id="hf-nemo-close-card" id="close-card" class="clip card" data-start="1.5" data-duration="3" data-track-index="2">
+      <div data-hf-id="hf-nemo-close-fish" id="close-fish" class="clip fish" data-start="1.5" data-duration="3" data-track-index="0"><div id="close-fish-move" class="fish-move" data-layout-allow-overflow><img data-var-src="fish" src="assets/nemo-logo.webp" alt="Nemo clownfish mark" /></div></div>
+      <h2 data-hf-id="hf-nemo-close-brand" id="close-brand" class="clip brand" data-var-text="brandName" data-start="1.72" data-duration="2.78" data-track-index="1">Nemo</h2>
+      <p data-hf-id="hf-nemo-close-tagline" id="close-tagline" class="clip tagline" data-var-text="tagline" data-start="2.03" data-duration="2.47" data-track-index="2">Find it. Sort it.</p>
+      <p data-hf-id="hf-nemo-close-cta" id="close-cta" class="clip cta" data-var-text="cta" data-start="2.38" data-duration="2.12" data-track-index="3">Try it: github.com/Arya-shivam/nemo</p>
+    </div>
+  </div>
+  <script>
+    const tl=gsap.timeline({paused:true});
+    tl.fromTo('#close-undo-line',{x:170},{x:0,duration:.32,ease:'expo.out'},.08);
+    tl.fromTo('#close-undo-move',{x:-80},{x:0,duration:.38,ease:'power3.out'},.12);
+    tl.fromTo('#close-fish-move',{x:-620,rotation:-8,scale:.88},{x:0,rotation:0,scale:1,duration:.56,ease:'power4.out'},1.5);
+    tl.fromTo('#close-brand',{x:150},{x:0,duration:.4,ease:'expo.out'},1.82);
+    tl.fromTo('#close-tagline',{x:100},{x:0,duration:.34,ease:'power4.out'},2.12);
+    tl.fromTo('#close-cta',{x:75},{x:0,duration:.32,ease:'power3.out'},2.46);
+    window.__timelines['close']=tl;
+  </script>
+</template>

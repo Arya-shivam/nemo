@@ -1,0 +1,15 @@
+<template>
+  <style>
+    #root{position:absolute;inset:0;overflow:hidden;background:var(--paper);color:var(--ink);font-family:Inter,sans-serif;--paper:#ecebe7;--ink:#171717;--mark:#ff7438}.clip{position:absolute}.headline{left:136px;top:80px;width:1650px;margin:0;font-size:92px;line-height:.92;letter-spacing:-.055em;font-weight:900;text-transform:uppercase;color:var(--ink)}.screen{left:96px;top:240px;width:1728px;height:684px;overflow:hidden;background:#141416}.screen-move{width:100%;height:100%}.screen img{display:block;width:100%;height:100%;object-fit:fill}
+  </style>
+  <div data-hf-id="hf-nemo-approve-root" id="root" data-composition-id="approve" data-width="1920" data-height="1080" data-composition-variables='[{"id":"approvalLine","type":"string","label":"Approval message","default":"REVIEW. THEN CONFIRM."}]'>
+    <h1 data-hf-id="hf-nemo-approve-headline" id="approve-headline" class="clip headline" data-var-text="approvalLine" data-start="0" data-duration="2.5">REVIEW. THEN CONFIRM.</h1>
+    <div data-hf-id="hf-nemo-approve-screen" id="approve-screen" class="clip screen" data-start="0.12" data-duration="2.38" data-track-index="1"><div id="approve-screen-move" class="screen-move"><img src="assets/nemo-category-confirmation.png" alt="Nemo confirmation dialog asking before creating category folders and moving files" /></div></div>
+  </div>
+  <script>
+    const tl=gsap.timeline({paused:true});
+    tl.fromTo('#approve-headline',{x:-120},{x:0,duration:.34,ease:'expo.out'},0);
+    tl.fromTo('#approve-screen-move',{scale:1.08},{scale:1,duration:.48,ease:'power3.out'},.12);
+    window.__timelines['approve']=tl;
+  </script>
+</template>

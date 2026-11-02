@@ -1,0 +1,20 @@
+<template>
+  <style>
+    #root{position:absolute;inset:0;overflow:hidden;background:var(--paper);color:var(--ink);font-family:Inter,sans-serif;--paper:#ecebe7;--ink:#171717;--mark:#ff7438}.clip{position:absolute}.headline{left:102px;top:342px;width:720px;margin:0;font-size:104px;line-height:.9;letter-spacing:-.06em;font-weight:900;text-transform:uppercase}.mark{left:106px;top:522px;width:180px;height:12px;background:var(--mark);transform-origin:left center}.screen{left:760px;top:190px;width:1120px;height:692px;overflow:hidden;background:#141416}.screen-move{width:100%;height:100%}.screen img{display:block;width:100%;height:100%;object-fit:cover;object-position:center}.note{left:109px;top:607px;width:650px;margin:0;color:#67655f;font-size:40px;line-height:1.05;font-weight:700;letter-spacing:-.035em}
+  </style>
+  <div data-hf-id="hf-nemo-reveal-root" id="root" data-composition-id="reveal" data-width="1920" data-height="1080" data-composition-variables='[{"id":"revealLine","type":"string","label":"Folder feature","default":"SORT A FOLDER."},{"id":"revealNote","type":"string","label":"Folder detail","default":"By names or image previews."}]'>
+    <h1 data-hf-id="hf-nemo-reveal-headline" id="reveal-headline" class="clip headline" data-var-text="revealLine" data-start="0" data-duration="2">SORT A FOLDER.</h1>
+    <div data-hf-id="hf-nemo-reveal-mark" id="reveal-mark" class="clip mark" data-start="0.16" data-duration="1.84" data-track-index="1"></div>
+    <p data-hf-id="hf-nemo-reveal-note" id="reveal-note" class="clip note" data-var-text="revealNote" data-start="0.48" data-duration="1.52" data-track-index="2">By names or image previews.</p>
+    <div data-hf-id="hf-nemo-reveal-screen" id="reveal-screen" class="clip screen" data-start="0" data-duration="2" data-track-index="3"><div id="reveal-screen-move" class="screen-move" data-layout-allow-overflow><img src="assets/nemo-category-empty.png" alt="Nemo folder categorization screen, with names-only and image-preview modes" /></div></div>
+  </div>
+  <script>
+    const tl=gsap.timeline({paused:true});
+    tl.fromTo('#reveal-screen-move',{x:100,scale:1.06},{x:0,scale:1,duration:.5,ease:'power3.out'},0);
+    tl.fromTo('#reveal-headline',{x:-50},{x:0,duration:.36,ease:'expo.out'},.12);
+    tl.fromTo('#reveal-mark',{scaleX:0},{scaleX:1,duration:.2,ease:'power4.out'},.38);
+    tl.fromTo('#reveal-note',{x:-30},{x:0,duration:.3,ease:'power4.out'},.5);
+    tl.to('#reveal-screen-move',{x:-12,scale:1.01,duration:.26,ease:'power3.in'},1.7);
+    window.__timelines['reveal']=tl;
+  </script>
+</template>

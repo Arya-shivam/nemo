@@ -1,0 +1,20 @@
+<template>
+  <style>
+    #root{position:absolute;inset:0;overflow:hidden;background:var(--paper);color:var(--ink);font-family:Inter,sans-serif;--paper:#ecebe7;--ink:#171717;--quiet:#67655f;--mark:#ff7438}.clip{position:absolute}.screen{left:96px;top:148px;width:1728px;height:198px;overflow:hidden;background:#141416}.screen-move{width:100%;height:100%}.screen img{display:block;width:100%;height:100%;object-fit:fill}.headline{left:120px;top:500px;width:1620px;margin:0;font-size:150px;line-height:.88;letter-spacing:-.06em;font-weight:900;text-transform:uppercase;color:var(--ink)}.subline{left:134px;top:711px;width:1440px;margin:0;font-size:78px;line-height:1;letter-spacing:-.045em;font-weight:700;color:var(--mark)}.tick{left:122px;top:425px;width:170px;height:12px;background:var(--mark);transform-origin:left center}
+  </style>
+  <div data-hf-id="hf-nemo-search-root" id="root" data-composition-id="uncertain" data-width="1920" data-height="1080" data-composition-variables='[{"id":"searchLine","type":"string","label":"Search feature","default":"SEARCH BY WORDS."},{"id":"searchSubline","type":"string","label":"Search detail","default":"Describe what you saw."}]'>
+    <div data-hf-id="hf-nemo-search-screen" id="search-screen" class="clip screen" data-start="0" data-duration="3" data-track-index="0"><div id="search-screen-move" class="screen-move"><img src="assets/nemo-search-header.png" alt="Nemo search field with a descriptive image query" /></div></div>
+    <h1 data-hf-id="hf-nemo-search-headline" id="search-headline" class="clip headline" data-var-text="searchLine" data-start="0" data-duration="3" data-track-index="1">SEARCH BY WORDS.</h1>
+    <p data-hf-id="hf-nemo-search-subline" id="search-subline" class="clip subline" data-var-text="searchSubline" data-start="0.72" data-duration="2.28" data-track-index="2">Describe what you saw.</p>
+    <div data-hf-id="hf-nemo-search-tick" id="search-tick" class="clip tick" data-start="0" data-duration="2.8" data-track-index="3"></div>
+  </div>
+  <script>
+    const tl=gsap.timeline({paused:true});
+    tl.fromTo('#search-screen-move',{x:-40,scale:1.04},{x:0,scale:1,duration:.42,ease:'power3.out'},0);
+    tl.fromTo('#search-headline',{x:-50},{x:0,duration:.38,ease:'expo.out'},.16);
+    tl.fromTo('#search-tick',{scaleX:0},{scaleX:1,duration:.2,ease:'power4.out'},.56);
+    tl.fromTo('#search-subline',{x:180},{x:0,duration:.36,ease:'back.out(1.05)'},.78);
+    tl.to('#search-screen-move',{x:24,scale:1.015,duration:.28,ease:'power3.in'},2.68);
+    window.__timelines['uncertain']=tl;
+  </script>
+</template>

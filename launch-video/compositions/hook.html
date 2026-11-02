@@ -1,0 +1,23 @@
+<template>
+  <style>
+    #root{position:absolute;inset:0;overflow:hidden;background:var(--screen);color:var(--paper);font-family:Inter,sans-serif;--paper:#f3f1eb;--ink:#171717;--mark:#ff7438;--screen:#141416}.clip{position:absolute}.line{margin:0;font-weight:900;letter-spacing:-.055em;line-height:.88;text-transform:uppercase}.line-one{left:112px;top:218px;width:1540px;font-size:150px;color:var(--paper)}.line-two{left:190px;top:482px;width:1680px;font-size:142px;color:var(--mark)}.name{position:absolute;color:#f3f1eb;font-size:30px;font-weight:700;letter-spacing:-.04em;white-space:nowrap}.name-a{left:1110px;top:146px;transform:rotate(6deg)}.name-b{left:144px;top:770px;transform:rotate(-5deg)}.name-c{left:1332px;top:820px;transform:rotate(3deg)}.slash{left:109px;top:405px;width:210px;height:10px;background:var(--mark);transform-origin:left center}
+  </style>
+  <div data-hf-id="hf-nemo-hook-root" id="root" data-composition-id="hook" data-width="1920" data-height="1080" data-composition-variables='[{"id":"problemOne","type":"string","label":"First problem","default":"LOST SCREENSHOTS."},{"id":"problemTwo","type":"string","label":"Second problem","default":"MESSY DOWNLOADS."}]'>
+    <h1 data-hf-id="hf-nemo-hook-line-one" id="hook-line-one" class="clip line line-one" data-var-text="problemOne" data-start="0" data-duration="1.05" data-track-index="2">LOST SCREENSHOTS.</h1>
+    <h2 data-hf-id="hf-nemo-hook-line-two" id="hook-line-two" class="clip line line-two" data-var-text="problemTwo" data-start="0.82" data-duration="1.18" data-track-index="3">MESSY DOWNLOADS.</h2>
+    <span data-hf-id="hf-nemo-hook-name-a" id="hook-name-a" class="clip name name-a" data-start="0" data-duration="1.85" data-track-index="0">IMG_7180.PNG</span>
+    <span data-hf-id="hf-nemo-hook-name-b" id="hook-name-b" class="clip name name-b" data-start="0.1" data-duration="1.75" data-track-index="1">scan_copy_04.pdf</span>
+    <span data-hf-id="hf-nemo-hook-name-c" id="hook-name-c" class="clip name name-c" data-start="0.28" data-duration="1.57" data-track-index="4">Screenshot_27.png</span>
+    <div data-hf-id="hf-nemo-hook-slash" id="hook-slash" class="clip slash" data-start="0" data-duration="1.85" data-track-index="5"></div>
+  </div>
+  <script>
+    const tl=gsap.timeline({paused:true});
+    tl.fromTo('#hook-line-one',{x:-50},{x:0,duration:.34,ease:'expo.out'},0);
+    tl.fromTo('#hook-line-two',{x:150},{x:0,duration:.32,ease:'power4.out'},.82);
+    tl.fromTo('#hook-name-a',{x:260,rotation:11},{x:0,rotation:6,duration:.42,ease:'power4.out'},0);
+    tl.fromTo('#hook-name-b',{x:-220,rotation:-10},{x:0,rotation:-5,duration:.38,ease:'expo.out'},.08);
+    tl.fromTo('#hook-name-c',{x:190,rotation:9},{x:0,rotation:3,duration:.4,ease:'power3.out'},.2);
+    tl.fromTo('#hook-slash',{scaleX:0},{scaleX:1,duration:.22,ease:'power4.out'},.48);
+    window.__timelines['hook']=tl;
+  </script>
+</template>

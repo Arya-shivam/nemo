@@ -1,0 +1,5 @@
+/.hyperframes/
+/.thumbnails/
+/.waveform-cache/
+/renders/*
+!/renders/nemo-launch.mp4
