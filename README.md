@@ -26,6 +26,16 @@ This fork of [gyotaku](https://github.com/xevrion/gyotaku) adds local TinyCLIP-b
 
 Screenshot indexing and visual search run locally. Folder categorization sends filenames to TypeSafe; optional image mode also uploads supported image previews. Nemo indexes folders your existing screenshot tool saves to, but does not capture screenshots itself.
 
+## Watch Nemo
+
+<p align="center">
+  <video controls preload="none" width="100%" poster="https://raw.githubusercontent.com/Arya-shivam/nemo/arya/launch-video/assets/nemo-category-modes.png">
+    <source src="https://raw.githubusercontent.com/Arya-shivam/nemo/arya/launch-video/renders/nemo-launch.mp4" type="video/mp4" />
+  </video>
+  <br>
+  <a href="https://github.com/Arya-shivam/nemo/blob/arya/launch-video/renders/nemo-launch.mp4">Open or download the launch video</a>
+</p>
+
 ## Highlights
 
 | Metric | Result |
